@@ -205,8 +205,8 @@ input[type="checkbox"] { accent-color: var(--vermelho); }
 
 .layout { padding: 14px 16px; background: var(--superficie-2); border-bottom: 1px solid var(--borda); }
 .layout { max-height: 62vh; overflow: auto; }
-.layout-secoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
-@media (min-width: 1300px) { .layout-secoes { grid-template-columns: 1.4fr 1.2fr 0.9fr; } }
+.layout-secoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 14px; }
+@media (min-width: 1900px) { .layout-secoes { grid-template-columns: 1.3fr 1.3fr 1fr 0.9fr; } }
 .layout-secoes .layout-grade { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
 .layout-secoes fieldset { border: 1px solid var(--borda); border-radius: var(--raio); padding: 10px 14px 14px; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .layout-secoes legend { padding: 0 6px; font-weight: 600; font-size: 13px; color: var(--texto); }
@@ -215,6 +215,8 @@ input[type="checkbox"] { accent-color: var(--vermelho); }
 .faixa output { font-variant-numeric: tabular-nums; text-align: right; color: var(--texto); font-weight: 600; }
 .linha-select { flex-direction: row; align-items: center; justify-content: space-between; }
 .linha-select select { width: auto; }
+.cor { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+.cor input[type="color"] { width: 46px; height: 28px; padding: 2px; border: 1px solid var(--borda-forte); border-radius: 6px; background: var(--superficie); cursor: pointer; }
 .campos-check { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 #imp-layout-info.alerta { color: var(--amarelo); }
 #imp-layout-padrao { align-self: flex-start; margin-top: 4px; }
