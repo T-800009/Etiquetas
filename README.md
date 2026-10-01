@@ -30,26 +30,34 @@ com a **foto daquele material**, a descrição, a referência, o BOM e onde ele 
 A foto é ligada ao **código do material**: se o mesmo código aparece em vários endereços/postos,
 todas as etiquetas mostram a mesma foto.
 
-## Como usar (Windows)
+## Onde o site roda
 
-1. Instale o **Node.js** (versão LTS) em <https://nodejs.org> — só precisa fazer isso uma vez.
-2. Baixe esta pasta do projeto para o computador que vai ficar com o site.
-3. Dê dois cliques em **`iniciar.bat`**. O navegador abre em `http://localhost:3000`.
-   - Na primeira vez o Windows pode perguntar se libera o Node.js no firewall: permita na **rede privada**,
-     senão os celulares não conseguem abrir o QR code.
-4. A janela preta mostra também o endereço do computador na rede, algo como
-   `http://192.168.0.10:3000`. Esse é o endereço que o celular usa.
+O site fica hospedado na **Cloudflare**:
 
-Em Linux/macOS: `./iniciar.sh` (ou `npm start`).
+- a tela e a API rodam num **Worker** (`src/index.js` + pasta `public/`);
+- o cadastro, as fotos e as configurações ficam no banco **D1** `etiquetas`
+  (ID `6bb7d865-1698-498d-b9b3-20b0aaf37cd1`, configurado em `wrangler.jsonc`).
+
+Como o site fica na internet, o QR code abre em qualquer celular — no Wi-Fi da empresa ou no 4G.
+As tabelas do banco são criadas sozinhas no primeiro acesso; não é preciso rodar nada no D1.
+
+### Publicar (uma vez só, pelo painel da Cloudflare)
+
+1. No painel da Cloudflare, vá em **Workers e Pages → Criar → Importar um repositório**
+   (*Workers & Pages → Create → Import a repository*).
+2. Conecte o GitHub e escolha o repositório **T-800009/Etiquetas**.
+3. Mantenha o comando de deploy `npx wrangler deploy` e clique em **Deploy**.
+4. O site fica em um endereço como `https://etiquetas.<sua-conta>.workers.dev`.
+
+Depois disso, cada alteração enviada para o branch `main` publica o site de novo automaticamente.
 
 ### Primeira configuração
 
-1. **Configurações → Endereço usado no QR code**: clique no endereço da rede que aparece
-   (ex.: `http://192.168.0.10:3000`) e salve. Teste com o QR code de exemplo usando o celular
-   conectado ao Wi-Fi da empresa. Sem isso, os QR codes apontam para `localhost` e não abrem no celular.
-2. **Logo**: o site vem com um logo provisório desenhado. Envie o arquivo oficial (PNG/JPG).
-3. **PIN de edição** (recomendado): com PIN, qualquer um pode consultar e imprimir, mas só quem sabe o
-   PIN altera o cadastro e as fotos.
+1. **Logo**: o site vem com um logo provisório desenhado. Envie o arquivo oficial (PNG/JPG) em Configurações.
+2. **PIN de edição** (recomendado): o site é acessível pela internet. Com PIN, qualquer um com o link pode
+   consultar e imprimir, mas só quem sabe o PIN altera o cadastro e as fotos.
+3. **Endereço do QR code**: deixe em branco (usa o endereço do próprio site). Só preencha se colocar um
+   domínio próprio no Worker.
 
 ### Trazer os dados da planilha atual
 
@@ -68,36 +76,26 @@ são atualizados em vez de duplicados.
   **Tirar foto do material**.
 - **Pelo computador**: em **Materiais**, clique no quadrinho "+ foto" ao lado do material.
 
-As fotos são reduzidas automaticamente (no máximo 1600 px) antes de enviar.
+As fotos são reduzidas automaticamente (no máximo 1280 px) antes de enviar.
 
 ## Onde ficam os dados
 
-Tudo fica na pasta `dados/`, ao lado do `server.js`:
-
-- `dados/banco.json` — cadastro dos materiais e configurações;
-- `dados/fotos/` — as fotos.
-
-**Backup = copiar a pasta `dados` inteira.** Ela não vai para o Git (está no `.gitignore`).
-
-## Hospedagem
-
-O QR code só funciona onde o celular consegue chegar no site:
-
-- **Computador na rede da empresa** (padrão): deixe um computador ligado com o `iniciar.bat` aberto.
-  Os celulares precisam estar no Wi-Fi da empresa.
-- **Servidor da TI / nuvem**: rode `node server.js` no servidor (porta em `PORT`, pasta de dados em
-  `DADOS_DIR`) e coloque o endereço do servidor em Configurações. Assim funciona até fora do Wi-Fi.
+No banco D1 `etiquetas` da Cloudflare. O D1 guarda o histórico dos últimos dias: dá para voltar o banco
+a um momento anterior em **D1 → etiquetas → Time Travel**. Em **Configurações → Cópia de segurança** também
+dá para baixar o cadastro em JSON ou planilha.
 
 ## Para desenvolvedores
 
-- Não usa dependências externas: só Node.js 18+. O QR code é gerado no navegador com a biblioteca
+- `npm install` e depois `npm run dev`: roda o site localmente (`http://localhost:8787`) com um banco D1 local.
+- `npm test`: sobe o Worker com `wrangler dev` e testa a API.
+- `npm run deploy`: publica pela linha de comando (precisa de `npx wrangler login`).
+- O QR code é gerado no navegador com a biblioteca
   [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) (MIT), incluída em `public/vendor/`.
-- `npm test` roda os testes da API.
-- Variáveis de ambiente: `PORT` (padrão 3000) e `DADOS_DIR` (padrão `./dados`).
 
 | Arquivo | Conteúdo |
 | --- | --- |
-| `server.js` | servidor HTTP, API e armazenamento em JSON |
+| `src/index.js` | Worker: API, fotos, página do QR code e acesso ao banco D1 |
+| `wrangler.jsonc` | configuração da Cloudflare (nome do Worker, banco D1, pasta `public`) |
 | `public/index.html`, `app.js` | telas Imprimir, Materiais e Configurações |
 | `public/etiqueta.css` | layout da etiqueta e da folha de impressão |
 | `public/importar.js` | leitura de `.xlsx`, `.csv` e texto colado do Excel |

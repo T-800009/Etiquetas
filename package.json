@@ -1,15 +1,15 @@
 {
   "name": "etiquetas-material",
   "version": "1.0.0",
-  "description": "Site para gerar etiquetas de material com QR code que abre a foto do material.",
+  "description": "Site para gerar etiquetas de material com QR code que abre a foto do material (Cloudflare Workers + D1).",
   "private": true,
   "license": "UNLICENSED",
-  "main": "server.js",
-  "engines": {
-    "node": ">=18"
-  },
   "scripts": {
-    "start": "node server.js",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
     "test": "node --test"
+  },
+  "devDependencies": {
+    "wrangler": "^4.145.0"
   }
 }

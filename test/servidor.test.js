@@ -5,9 +5,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { criarServidor } = require('../server.js');
+const { spawn } = require('node:child_process');
 
-let servidor;
+let processo;
 let base;
 let dadosDir;
 
@@ -30,15 +30,40 @@ async function chamar(metodo, rota, { json, corpo, tipo, pin } = {}) {
   return { status: resp.status, dados, headers: resp.headers };
 }
 
+// Sobe o Worker localmente (wrangler dev) com um banco D1 temporário.
+function iniciarWorker() {
+  const porta = 8800 + Math.floor(Math.random() * 1000);
+  processo = spawn(
+    process.execPath,
+    [path.join(__dirname, '..', 'node_modules', 'wrangler', 'bin', 'wrangler.js'), 'dev', '--port', String(porta), '--ip', '127.0.0.1', '--persist-to', dadosDir, '--show-interactive-dev-session=false'],
+    { cwd: path.join(__dirname, '..'), env: { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false' }, stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  base = `http://127.0.0.1:${porta}`;
+  return new Promise((ok, falha) => {
+    let saida = '';
+    const tempo = setTimeout(() => falha(new Error('wrangler dev não iniciou:\n' + saida)), 60000);
+    const ler = (b) => {
+      saida += b;
+      if (/Ready on/.test(saida)) {
+        clearTimeout(tempo);
+        ok();
+      }
+    };
+    processo.stdout.on('data', ler);
+    processo.stderr.on('data', ler);
+    processo.on('exit', (c) => falha(new Error(`wrangler saiu (${c}):\n${saida}`)));
+  });
+}
+
 before(async () => {
   dadosDir = await fs.mkdtemp(path.join(os.tmpdir(), 'etiquetas-teste-'));
-  servidor = await criarServidor({ dadosDir });
-  await new Promise((ok) => servidor.listen(0, '127.0.0.1', ok));
-  base = `http://127.0.0.1:${servidor.address().port}`;
+  await iniciarWorker();
 });
 
 after(async () => {
-  await new Promise((ok) => servidor.close(ok));
+  processo.removeAllListeners('exit');
+  processo.kill();
+  await new Promise((ok) => processo.once('exit', ok));
   await fs.rm(dadosDir, { recursive: true, force: true });
 });
 
@@ -96,10 +121,11 @@ test('foto é ligada ao código e aparece na página do material', async () => {
   assert.equal(arquivo.status, 200);
   assert.equal(arquivo.headers.get('content-type'), 'image/jpeg');
 
-  // Trocar a foto apaga o arquivo antigo.
+  // Trocar a foto substitui a antiga.
   const nova = await chamar('PUT', '/api/fotos/13020085-00', { corpo: JPEG, tipo: 'image/jpeg' });
   assert.notEqual(nova.dados.arquivo, enviada.dados.arquivo);
-  await assert.rejects(fs.access(path.join(dadosDir, 'fotos', enviada.dados.arquivo)));
+  assert.equal((await fetch(`${base}/fotos/${enviada.dados.arquivo}`)).status, 404);
+  assert.equal((await fetch(`${base}/fotos/${nova.dados.arquivo}`)).status, 200);
 });
 
 test('página do QR code é servida para qualquer código', async () => {
@@ -109,13 +135,6 @@ test('página do QR code é servida para qualquer código', async () => {
 
   const inexistente = await chamar('GET', '/api/material/NAO-EXISTE');
   assert.equal(inexistente.status, 404);
-});
-
-test('não deixa sair da pasta public nem da pasta de fotos', async () => {
-  for (const rota of ['/..%2fserver.js', '/%2e%2e/server.js', '/fotos/..%2fbanco.json']) {
-    const r = await fetch(base + rota);
-    assert.notEqual(r.status, 200, rota);
-  }
 });
 
 test('PIN protege alterações mas não a consulta', async () => {
@@ -139,13 +158,29 @@ test('endereço do QR code é validado e salvo', async () => {
   assert.equal(ok.dados.urlBase, 'http://192.168.0.10:3000');
 });
 
-test('substituir cadastro mantém as fotos e os dados sobrevivem a reinício', async () => {
+test('substituir cadastro mantém as fotos', async () => {
   const r = await chamar('POST', '/api/itens/importar', { json: { modo: 'substituir', itens: [{ codigo: '13020085-00', endereco: '09.Z.Z9' }] } });
   assert.equal(r.dados.total, 1);
   const material = await chamar('GET', '/api/material/13020085-00');
   assert.ok(material.dados.foto, 'foto continua ligada ao código');
+  assert.equal(material.dados.itens[0].endereco, '09.Z.Z9');
+});
 
-  const outro = await criarServidor({ dadosDir });
-  assert.equal(outro.banco.dados.itens.length, 1);
-  assert.equal(outro.banco.dados.itens[0].endereco, '09.Z.Z9');
+test('importação grande vai em blocos numa transação só', async () => {
+  const itens = Array.from({ length: 1500 }, (_, i) => ({ codigo: `${20000000 + i}-00`, descricao: 'Parafuso sextavado flangeado M8x20 '.repeat(3), endereco: `0${i % 9}.A.C${i % 6}` }));
+  const r = await chamar('POST', '/api/itens/importar', { json: { modo: 'adicionar', itens } });
+  assert.equal(r.status, 200);
+  assert.equal(r.dados.total, 1501);
+  const lista = await chamar('GET', '/api/itens');
+  assert.equal(lista.dados.itens.length, 1501);
+  assert.equal(lista.dados.itens[1].codigo, '20000000-00', 'mantém a ordem da planilha');
+});
+
+test('telas e página do QR code são servidas', async () => {
+  const inicio = await fetch(`${base}/`);
+  assert.equal(inicio.status, 200);
+  assert.match(await inicio.text(), /app\.js/);
+  const logo = await fetch(`${base}/logo`);
+  assert.equal(logo.status, 200);
+  assert.match(logo.headers.get('content-type'), /svg/);
 });

@@ -31,7 +31,7 @@
     itens: [],
     fotos: {},
     fotosPorCodigo: new Map(),
-    config: { urlBase: '', temPin: false, logo: '/img/logo-padrao.svg', sugestoesUrl: [] },
+    config: { urlBase: '', temPin: false, logo: '/img/logo-padrao.svg' },
     selecao: new Map(), // id do item -> número de cópias
     layout: { ...LAYOUT_PADRAO, ...lerLocal('etiquetas.layout', {}) },
     zoom: lerLocal('etiquetas.zoom', 60),
@@ -416,7 +416,7 @@
     const base = estado.config.urlBase || location.origin;
     aviso.hidden = !(estado.layout.qr && estado.selecao.size && ehEnderecoLocal(base));
     aviso.innerHTML = `<strong>Atenção:</strong> os QR codes estão apontando para <code>${esc(base)}</code>, que só funciona neste computador — o celular não vai abrir.
-      Defina o endereço do site na rede em <a href="#config" data-ir="config">Configurações</a>.`;
+      Para testar com o celular, use o site publicado na Cloudflare.`;
   }
 
   // Formulário de layout
@@ -853,15 +853,11 @@
     const c = estado.config;
     const campoUrl = $('#cfg-url');
     if (document.activeElement !== campoUrl) campoUrl.value = c.urlBase;
-    const sugestoes = [...new Set([...(c.sugestoesUrl || []), location.origin])].filter((u) => !ehEnderecoLocal(u));
-    $('#cfg-sugestoes').innerHTML = sugestoes.length
-      ? 'Endereços deste computador na rede: ' + sugestoes.map((u) => `<button type="button" class="botao pequeno" data-url="${esc(u)}">${esc(u)}</button>`).join('')
-      : '';
     const exemplo = estado.itens[0]?.codigo || '13020085-00';
     const url = urlMaterial(c.urlBase, exemplo);
     $('#cfg-teste').innerHTML = `<div class="qr">${qrSvg(url, { margem: 2 })}</div>
       <div><div>QR code de teste — aponte a câmera do celular:</div><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a>
-      ${ehEnderecoLocal(url) ? '<p class="dica"><strong>Este endereço só funciona neste computador.</strong> Escolha um dos endereços da rede acima.</p>' : ''}</div>`;
+      ${ehEnderecoLocal(url) ? '<p class="dica"><strong>Este endereço só funciona neste computador.</strong> Publique o site na Cloudflare para os celulares conseguirem abrir.</p>' : ''}</div>`;
 
     $('#cfg-logo-img').src = c.logo;
     $('#cfg-logo-padrao').hidden = !c.logoPersonalizado;
@@ -873,12 +869,6 @@
     $('#cfg-pin-form button.primario').textContent = c.temPin ? 'Trocar PIN' : 'Definir PIN';
   }
 
-  $('#cfg-sugestoes').addEventListener('click', (e) => {
-    const botao = e.target.closest('[data-url]');
-    if (!botao) return;
-    $('#cfg-url').value = botao.dataset.url;
-    $('#cfg-url-form').requestSubmit();
-  });
   $('#cfg-url-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {

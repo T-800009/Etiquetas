@@ -90,7 +90,17 @@ const Comum = (() => {
   // ---- Fotos --------------------------------------------------------------------
 
   // Reduz fotos do celular (que costumam ter 4000px e vários MB) antes de enviar.
-  async function reduzirImagem(arquivo, maximo = 1600, qualidade = 0.85) {
+  // O banco aceita até ~1,9 MB por foto; se passar, tenta de novo com menos qualidade.
+  async function reduzirImagem(arquivo, maximo = 1280, qualidade = 0.82) {
+    let blob = await converterImagem(arquivo, maximo, qualidade);
+    for (let i = 0; blob.size > 1.5 * 1024 * 1024 && i < 3; i++) {
+      maximo = Math.round(maximo * 0.75);
+      blob = await converterImagem(arquivo, maximo, qualidade);
+    }
+    return blob;
+  }
+
+  async function converterImagem(arquivo, maximo, qualidade) {
     let fonte;
     try {
       fonte = await createImageBitmap(arquivo, { imageOrientation: 'from-image' });

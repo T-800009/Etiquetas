@@ -1,6 +1,7 @@
-# Dados do cadastro e fotos (ficam só no computador/servidor que roda o site)
-dados/
+# Dependências e arquivos locais do wrangler (banco D1 de desenvolvimento)
 node_modules/
+.wrangler/
+.dev.vars
 *.log
 .DS_Store
 Thumbs.db

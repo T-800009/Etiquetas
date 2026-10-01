@@ -304,7 +304,6 @@ input[type="checkbox"] { accent-color: var(--vermelho); }
 .cartao p { margin: 0 0 12px; color: var(--texto-2); }
 .linha-form { display: flex; gap: 8px; flex-wrap: wrap; }
 .linha-form input { flex: 1 1 260px; width: auto; }
-.sugestoes { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; align-items: center; font-size: 13px; color: var(--texto-2); }
 .teste-qr { display: flex; gap: 16px; align-items: center; margin-top: 14px; }
 .teste-qr .qr { width: 110px; height: 110px; flex: 0 0 auto; border: 1px solid var(--borda); border-radius: 6px; padding: 4px; background: #fff; }
 .teste-qr .qr svg { width: 100%; height: 100%; display: block; }
