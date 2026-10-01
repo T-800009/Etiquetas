@@ -60,7 +60,7 @@
     itens: [],
     fotos: {},
     fotosPorCodigo: new Map(),
-    config: { urlBase: '', temPin: false, logo: '/img/logo-padrao.svg' },
+    config: { urlBase: '', temPin: false, logo: '/img/logo-padrao.png' },
     selecao: new Map(), // id do item -> número de cópias
     layout: carregarLayout(),
     zoom: lerLocal('etiquetas.zoom', 60),

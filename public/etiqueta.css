@@ -60,7 +60,7 @@
 .etq-logo {
   flex: 0 0 auto;
   height: calc(var(--f) * 0.17 * var(--t-logo, 1));
-  width: calc(var(--f) * 0.36 * var(--t-logo, 1));
+  width: calc(var(--f) * 0.5 * var(--t-logo, 1));
   max-width: 75%;
   object-fit: contain;
   object-position: left center;

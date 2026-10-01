@@ -441,7 +441,7 @@ function configPublica(config, env) {
   return {
     urlBase: config.urlBase || '',
     temPin: Boolean(config.pin),
-    logo: config.logo ? `/logo?v=${encodeURIComponent(config.logo)}` : '/img/logo-padrao.svg',
+    logo: config.logo ? `/logo?v=${encodeURIComponent(config.logo)}` : '/img/logo-padrao.png',
     logoPersonalizado: Boolean(config.logo),
     buscaGoogle: Boolean(env.SERPER_API_KEY),
   };
@@ -679,7 +679,7 @@ async function tratar(request, env) {
     if (url.pathname === '/logo') {
       const config = await lerConfig(env.DB);
       const logo = config.logo && (await env.DB.prepare('SELECT tipo, dados FROM arquivos WHERE nome = ?').bind(config.logo).first());
-      return (await servirBlob(logo, 'public, max-age=86400')) || env.ASSETS.fetch(new Request(new URL('/img/logo-padrao.svg', url)));
+      return (await servirBlob(logo, 'public, max-age=86400')) || env.ASSETS.fetch(new Request(new URL('/img/logo-padrao.png', url)));
     }
     return env.ASSETS.fetch(request);
   } catch (err) {

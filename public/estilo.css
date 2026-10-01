@@ -65,7 +65,8 @@ code, kbd {
   z-index: 10;
 }
 .marca { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.marca-logo { height: 30px; width: auto; }
+/* Logo em branco no topo escuro (qualquer cor de logo fica legível). */
+.marca-logo { height: 30px; width: auto; filter: brightness(0) invert(1); }
 .marca-nome { font-weight: 600; font-size: 16px; white-space: nowrap; }
 .abas { display: flex; gap: 4px; height: 100%; }
 .aba {
