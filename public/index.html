@@ -82,10 +82,16 @@
           <label>Margem da folha (mm) <input name="margem" type="number" min="0" max="40" step="0.5"></label>
           <label>Espaço entre etiquetas (mm) <input name="espaco" type="number" min="0" max="20" step="0.5"></label>
           <label>Cópias ao selecionar <input name="copias" type="number" min="1" max="99" step="1"></label>
+          <label>Ao lado do texto
+            <select name="lateral">
+              <option value="foto">Foto do material</option>
+              <option value="qr">QR code</option>
+              <option value="nada">Nada</option>
+            </select>
+          </label>
           <label>Pular posições na 1ª folha <input name="pular" type="number" min="0" max="200" step="1"></label>
         </div>
         <div class="layout-opcoes">
-          <label class="check"><input type="checkbox" name="qr"> Mostrar QR code</label>
           <label class="check"><input type="checkbox" name="corte"> Linhas de corte tracejadas</label>
           <label class="check"><input type="checkbox" name="centralizar"> Centralizar na folha</label>
         </div>

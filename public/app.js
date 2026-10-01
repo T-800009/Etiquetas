@@ -21,7 +21,7 @@
     espaco: 0,
     copias: 1,
     pular: 0,
-    qr: true,
+    lateral: 'foto', // o que vai ao lado do texto: 'foto', 'qr' ou 'nada'
     corte: true,
     centralizar: true,
   };
@@ -33,12 +33,20 @@
     fotosPorCodigo: new Map(),
     config: { urlBase: '', temPin: false, logo: '/img/logo-padrao.svg' },
     selecao: new Map(), // id do item -> número de cópias
-    layout: { ...LAYOUT_PADRAO, ...lerLocal('etiquetas.layout', {}) },
+    layout: carregarLayout(),
     zoom: lerLocal('etiquetas.zoom', 60),
     limiteLista: POR_PAGINA,
     limiteTabela: POR_PAGINA,
     marcadosTabela: new Set(),
   };
+
+  function carregarLayout() {
+    const salvo = lerLocal('etiquetas.layout', {});
+    // Layouts salvos antes da opção de foto tinham só "qr: true/false".
+    if (!salvo.lateral && 'qr' in salvo) salvo.lateral = salvo.qr ? 'qr' : 'nada';
+    delete salvo.qr;
+    return { ...LAYOUT_PADRAO, ...salvo };
+  }
 
   // ---------------------------------------------------------------------------
   // Dados
@@ -283,7 +291,17 @@
     return cacheQr.get(url);
   }
 
-  function htmlEtiqueta(item, { escalas = {}, qr = '', classes = '' } = {}) {
+  // Foto do material ao lado do texto; sem foto cadastrada, usa o QR code no lugar.
+  function htmlLateral(item) {
+    const lateral = estado.layout.lateral;
+    if (lateral === 'foto') {
+      const foto = fotoDe(item.codigo);
+      if (foto) return `<div class="etq-lateral etq-foto"><img src="${esc(urlFoto(foto))}" alt=""></div>`;
+    }
+    return `<div class="etq-lateral etq-qr">${qrDe(item.codigo)}</div>`;
+  }
+
+  function htmlEtiqueta(item, { escalas = {}, lateral = '', classes = '' } = {}) {
     const s = (k) => (escalas[k] && escalas[k] < 1 ? ` style="--s:${escalas[k]}"` : '');
     return `<div class="etq${classes}">
       <div class="etq-info">
@@ -293,7 +311,7 @@
         ${item.bom ? `<div class="etq-bom"${s('bom')}>${esc(item.bom)}</div>` : ''}
         <div class="etq-rodape"><span class="etq-desc"${s('descricao')}>${esc(item.descricao)}</span><span class="etq-end"${s('endereco')}>${esc(item.endereco)}</span></div>
       </div>
-      ${estado.layout.qr ? `<div class="etq-qr">${qr}</div>` : ''}
+      ${estado.layout.lateral === 'nada' ? '' : lateral || '<div class="etq-lateral"></div>'}
     </div>`;
   }
 
@@ -308,7 +326,7 @@
   const cacheEscalas = new Map();
 
   function medirEscalas(itens, g) {
-    const chaveLayout = `${g.w}x${g.h}|${estado.layout.qr}|${estado.config.logo}`;
+    const chaveLayout = `${g.w}x${g.h}|${estado.layout.lateral === 'nada'}|${estado.config.logo}`;
     const chave = (i) => `${chaveLayout}|${i.codigo}|${i.referencia}|${i.bom}|${i.descricao}|${i.endereco}|${i.projeto}`;
     const faltando = itens.filter((i) => !cacheEscalas.has(chave(i)));
     if (faltando.length) {
@@ -399,7 +417,7 @@
         const html = pagina.map((item, idx) => {
           const classes = `${idx % g.cols === 0 ? ' col0' : ''}${idx < g.cols ? ' lin0' : ''}${item ? '' : ' vazia'}`;
           if (!item) return `<div class="etq${classes}"></div>`;
-          return htmlEtiqueta(item, { escalas: escalas.get(item.id), qr: l.qr ? qrDe(item.codigo) : '', classes });
+          return htmlEtiqueta(item, { escalas: escalas.get(item.id), lateral: l.lateral === 'nada' ? '' : htmlLateral(item), classes });
         });
         return `<div class="${classeFolha}">${html.join('')}</div>`;
       })
@@ -414,7 +432,7 @@
   function atualizarAvisoUrl() {
     const aviso = $('#imp-aviso-url');
     const base = estado.config.urlBase || location.origin;
-    aviso.hidden = !(estado.layout.qr && estado.selecao.size && ehEnderecoLocal(base));
+    aviso.hidden = !(estado.layout.lateral !== 'nada' && estado.selecao.size && ehEnderecoLocal(base));
     aviso.innerHTML = `<strong>Atenção:</strong> os QR codes estão apontando para <code>${esc(base)}</code>, que só funciona neste computador — o celular não vai abrir.
       Para testar com o celular, use o site publicado na Cloudflare.`;
   }

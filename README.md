@@ -17,6 +17,9 @@ com a **foto daquele material**, a descrição, a referência, o BOM e onde ele 
 
 ## O que o site faz
 
+- **Foto na etiqueta**: ao lado do texto, a etiqueta mostra a **foto do material** (padrão). Material ainda
+  sem foto sai com o QR code no lugar. Em *Tamanho e layout → Ao lado do texto* dá para trocar para
+  "QR code" ou "Nada".
 - **Imprimir**: escolha os materiais (busca, filtro por projeto/linha, ordem por endereço), a quantidade
   de cópias de cada um e imprima em folha A4. Tamanho da etiqueta, margens, orientação e linhas de corte
   são configuráveis. Textos compridos diminuem para caber, em vez de serem cortados como no Excel.
