@@ -58,7 +58,7 @@
 }
 /* Largura fixa: o espaço do logo não depende de a imagem já ter carregado. */
 .etq-logo { flex: 0 0 auto; height: 100%; width: calc(var(--f) * 0.36); object-fit: contain; object-position: left center; }
-.etq-projeto { min-width: 0; font-size: calc(var(--f) * 0.09 * var(--s, 1)); white-space: nowrap; overflow: hidden; }
+.etq-projeto { min-width: 0; font-size: calc(var(--f) * 0.09 * var(--fg, 1) * var(--t-projeto, 1) * var(--s, 1)); white-space: nowrap; overflow: hidden; }
 
 .etq-codigo,
 .etq-ref,
@@ -67,9 +67,9 @@
   white-space: nowrap;
   overflow: hidden;
 }
-.etq-codigo { font-weight: 700; font-size: calc(var(--f) * 0.14 * var(--s, 1)); line-height: 1.05; }
-.etq-ref,
-.etq-bom { font-size: calc(var(--f) * 0.092 * var(--s, 1)); }
+.etq-codigo { font-weight: 700; font-size: calc(var(--f) * 0.14 * var(--fg, 1) * var(--t-codigo, 1) * var(--s, 1)); line-height: 1.05; }
+.etq-ref { font-size: calc(var(--f) * 0.092 * var(--fg, 1) * var(--t-referencia, 1) * var(--s, 1)); }
+.etq-bom { font-size: calc(var(--f) * 0.092 * var(--fg, 1) * var(--t-bom, 1) * var(--s, 1)); }
 
 .etq-rodape {
   display: flex;
@@ -80,9 +80,9 @@
 .etq-desc {
   flex: 1 1 0;
   min-width: 0;
-  font-size: calc(var(--f) * 0.085 * var(--s, 1));
+  font-size: calc(var(--f) * 0.085 * var(--fg, 1) * var(--t-descricao, 1) * var(--s, 1));
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: var(--linhas-descricao, 2);
   -webkit-box-orient: vertical;
   overflow: hidden;
   overflow-wrap: anywhere;
@@ -91,18 +91,10 @@
   flex: 0 0 auto;
   max-width: 60%;
   font-weight: 700;
-  font-size: calc(var(--f) * 0.115 * var(--s, 1));
+  font-size: calc(var(--f) * 0.115 * var(--fg, 1) * var(--t-endereco, 1) * var(--s, 1));
   white-space: nowrap;
   overflow: hidden;
 }
-
-.etq-lateral {
-  flex: 0 0 auto;
-  height: 100%;
-  aspect-ratio: 1;
-}
-.etq-qr svg { display: block; width: 100%; height: 100%; }
-.etq-foto img { display: block; width: 100%; height: 100%; object-fit: contain; }
 
 /* Área invisível usada para medir e ajustar o tamanho do texto. */
 .medidor {

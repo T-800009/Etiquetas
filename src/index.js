@@ -6,6 +6,8 @@ const CAMPOS = ['codigo', 'referencia', 'bom', 'descricao', 'endereco', 'projeto
 const LIMITE_JSON = 20 * 1024 * 1024;
 // O D1 aceita no máximo 2 MB por linha; as fotos chegam reduzidas pelo navegador.
 const LIMITE_IMAGEM = 1900 * 1024;
+// Imagens baixadas da internet podem ser grandes; o navegador reduz antes de salvar.
+const LIMITE_DOWNLOAD = 10 * 1024 * 1024;
 const MAX_TENTATIVAS = 10;
 const JANELA_TENTATIVAS_MS = 10 * 60 * 1000;
 const ITERACOES_PIN = 100000;
@@ -214,14 +216,14 @@ async function salvarFoto(db, codigo, bytes, tipo, origem, credito = '') {
 }
 
 // ---------------------------------------------------------------------------
-// Busca de fotos na internet (Wikimedia Commons e Openverse: imagens livres,
-// sem precisar de chave de API)
+// Busca de fotos na internet: Google Imagens (pelo serviço Serper.dev, quando a
+// chave SERPER_API_KEY está configurada) ou, sem chave, Wikimedia Commons e
+// Openverse (imagens livres).
 // ---------------------------------------------------------------------------
 
 const MODELO_TRADUCAO = '@cf/meta/m2m100-1.2b';
 const AGENTE = 'EtiquetasDeMaterial/1.0 (+https://github.com/T-800009/Etiquetas)';
-// Só baixamos imagens destes endereços (os mesmos que a busca devolve).
-const HOSTS_PERMITIDOS = ['upload.wikimedia.org', 'api.openverse.org'];
+const NAVEGADOR = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
 
 // Nos testes, o acesso à internet é trocado por um serviço simulado.
 function acessoInternet(env) {
@@ -304,7 +306,39 @@ async function buscarOpenverse(baixar, termo) {
     }));
 }
 
+async function buscarGoogle(env, termo) {
+  const resp = await acessoInternet(env)('https://google.serper.dev/images', {
+    method: 'POST',
+    headers: { 'X-API-KEY': env.SERPER_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ q: termo, gl: 'br', hl: 'pt-br', num: 20 }),
+  });
+  if (resp.status === 401 || resp.status === 403) throw new ErroHttp(502, 'A chave do Google (SERPER_API_KEY) foi recusada. Confira a chave na Cloudflare.');
+  if (resp.status === 429 || resp.status === 400) throw new ErroHttp(429, 'Acabaram os créditos de busca no Google (Serper.dev).');
+  if (!resp.ok) throw new Error(`Serper respondeu ${resp.status}`);
+  const dados = await resp.json();
+  return (dados?.images || [])
+    .filter((r) => r.imageUrl || r.thumbnailUrl)
+    .map((r) => ({
+      url: r.imageUrl || r.thumbnailUrl,
+      reserva: r.thumbnailUrl || '',
+      miniatura: r.thumbnailUrl || r.imageUrl,
+      titulo: semHtml(r.title),
+      credito: r.domain || r.source || '',
+      pagina: r.link || '',
+    }));
+}
+
 async function buscarImagens(env, descricao, limite = 12) {
+  // O Google entende a descrição em português; usado quando há chave.
+  if (env.SERPER_API_KEY) {
+    try {
+      const resultados = (await buscarGoogle(env, descricao)).slice(0, limite);
+      if (resultados.length) return { termo: descricao, fonte: 'google', resultados };
+    } catch (err) {
+      if (err instanceof ErroHttp) throw err;
+      console.warn('Busca no Google falhou, usando fontes livres:', err);
+    }
+  }
   const baixar = acessoInternet(env);
   const termo = await traduzir(env, descricao);
   const vistos = new Set();
@@ -324,7 +358,7 @@ async function buscarImagens(env, descricao, limite = 12) {
     else console.warn(openverse.reason);
     if (resultados.length >= 6) break;
   }
-  return { termo, resultados };
+  return { termo, fonte: 'livre', resultados: resultados.map((r) => ({ ...r, miniatura: r.url })) };
 }
 
 async function baixarImagem(env, endereco) {
@@ -334,11 +368,12 @@ async function baixarImagem(env, endereco) {
   } catch {
     throw new ErroHttp(400, 'Endereço de imagem inválido.');
   }
-  if (url.protocol !== 'https:' || !HOSTS_PERMITIDOS.includes(url.hostname)) throw new ErroHttp(400, 'Só é possível usar imagens encontradas pela busca do site.');
-  const resp = await acessoInternet(env)(url.toString(), { headers: { 'User-Agent': AGENTE } });
+  if (url.protocol !== 'https:') throw new ErroHttp(400, 'Só é possível baixar imagens de endereços https.');
+  const resp = await acessoInternet(env)(url.toString(), { headers: { 'User-Agent': NAVEGADOR, Accept: 'image/*' } });
   if (!resp.ok) throw new ErroHttp(502, 'Não foi possível baixar esta imagem. Escolha outra.');
+  if (Number(resp.headers.get('content-length')) > LIMITE_DOWNLOAD) throw new ErroHttp(413, 'Imagem grande demais. Escolha outra.');
   const bytes = new Uint8Array(await resp.arrayBuffer());
-  if (bytes.length > LIMITE_IMAGEM) throw new ErroHttp(413, 'Imagem grande demais. Escolha outra.');
+  if (bytes.length > LIMITE_DOWNLOAD) throw new ErroHttp(413, 'Imagem grande demais. Escolha outra.');
   const tipo = tipoImagem(bytes);
   if (!tipo) throw new ErroHttp(415, 'O endereço não é uma imagem JPG, PNG ou WEBP. Escolha outra.');
   return { bytes, tipo };
@@ -408,6 +443,7 @@ function configPublica(config, env) {
     temPin: Boolean(config.pin),
     logo: config.logo ? `/logo?v=${encodeURIComponent(config.logo)}` : '/img/logo-padrao.svg',
     logoPersonalizado: Boolean(config.logo),
+    buscaGoogle: Boolean(env.SERPER_API_KEY),
   };
 }
 
@@ -520,7 +556,19 @@ async function rotaApi(request, env, url) {
     const corpo = await lerCorpo(request, LIMITE_IMAGEM);
     const tipo = tipoImagem(corpo);
     if (!tipo) throw new ErroHttp(415, 'Envie uma imagem JPG, PNG ou WEBP.');
-    return json(await salvarFoto(db, codigo, corpo, tipo, 'foto'));
+    // Fotos vindas da internet não substituem foto tirada no local, a não ser que o pedido diga.
+    const origem = request.headers.get('x-origem') === 'internet' ? 'internet' : 'foto';
+    let credito = '';
+    if (origem === 'internet') {
+      const atual = await fotoDoCodigo(db, codigo);
+      if (atual && atual.foto.origem !== 'internet' && request.headers.get('x-substituir') !== '1') throw new ErroHttp(409, 'Este material já tem foto tirada no local.');
+      try {
+        credito = limparTexto(decodeURIComponent(request.headers.get('x-credito') || ''));
+      } catch {
+        credito = '';
+      }
+    }
+    return json(await salvarFoto(db, codigo, corpo, tipo, origem, credito));
   }
 
   // Busca fotos na internet pela descrição (só consulta, não salva nada).
@@ -530,25 +578,12 @@ async function rotaApi(request, env, url) {
     return json(await buscarImagens(env, descricao));
   }
 
-  // Salva como foto do material uma imagem da internet. Sem "url", usa o primeiro
-  // resultado da busca pela descrição. Por padrão não substitui foto tirada no local.
-  if (recurso === 'fotos' && id && acao === 'internet' && metodo === 'POST') {
+  // Baixa uma imagem encontrada na busca (o navegador não pode baixar direto de
+  // outros sites) para o navegador remover o fundo e salvar.
+  if (recurso === 'imagens' && id === 'baixar' && metodo === 'GET') {
     await exigirPin(request, db, config);
-    const codigo = limparTexto(id);
-    const corpo = await lerJson(request);
-    const atual = await fotoDoCodigo(db, codigo);
-    if (atual && atual.foto.origem !== 'internet' && !corpo.substituir) throw new ErroHttp(409, 'Este material já tem foto tirada no local.');
-    let escolhida = typeof corpo.url === 'string' ? { url: corpo.url, credito: limparTexto(corpo.credito) } : null;
-    if (!escolhida) {
-      const item = await db.prepare("SELECT descricao FROM itens WHERE upper(codigo) = ? AND descricao <> '' LIMIT 1").bind(codigo.toUpperCase()).first();
-      const descricao = limparTexto(corpo.descricao) || item?.descricao;
-      if (!descricao) throw new ErroHttp(400, 'Este material não tem descrição para buscar a foto.');
-      const { resultados } = await buscarImagens(env, descricao, 4);
-      if (!resultados.length) throw new ErroHttp(404, 'Nenhuma foto encontrada na internet para esta descrição.');
-      escolhida = resultados[0];
-    }
-    const imagem = await baixarImagem(env, escolhida.url);
-    return json(await salvarFoto(db, codigo, imagem.bytes, imagem.tipo, 'internet', escolhida.credito || ''));
+    const imagem = await baixarImagem(env, url.searchParams.get('url') || '');
+    return new Response(imagem.bytes, { headers: { 'Content-Type': imagem.tipo.tipo, 'Cache-Control': 'no-store' } });
   }
 
   if (recurso === 'fotos' && id && !acao && metodo === 'DELETE') {

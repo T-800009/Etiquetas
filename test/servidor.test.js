@@ -39,6 +39,7 @@ async function configuracoesDeTeste() {
   delete config.$schema;
   config.main = path.join(raiz, config.main);
   config.assets.directory = path.join(raiz, config.assets.directory);
+  config.vars = { ...config.vars, SERPER_API_KEY: 'chave-teste' };
   config.services = [
     { binding: 'AI', service: 'internet-falsa', entrypoint: 'IaFalsa' },
     { binding: 'INTERNET', service: 'internet-falsa' },
@@ -206,39 +207,48 @@ test('telas e página do QR code são servidas', async () => {
   assert.match(logo.headers.get('content-type'), /svg/);
 });
 
-test('busca fotos na internet pela descrição traduzida', async () => {
-  const busca = await chamar('GET', `/api/imagens/buscar?q=${encodeURIComponent('Arruela lisa M6')}`);
-  assert.equal(busca.status, 200);
-  assert.equal(busca.dados.termo, 'Flat washer M6');
-  const urls = busca.dados.resultados.map((r) => r.url);
+test('busca no Google quando há chave e usa fontes livres quando o Google não acha', async () => {
+  const google = await chamar('GET', `/api/imagens/buscar?q=${encodeURIComponent('Porca hexagonal M6')}`);
+  assert.equal(google.status, 200);
+  assert.equal(google.dados.fonte, 'google');
+  assert.equal(google.dados.termo, 'Porca hexagonal M6', 'Google busca em português, sem tradução');
+  assert.deepEqual(google.dados.resultados[0], {
+    url: 'https://loja.exemplo.com/porca.jpg',
+    reserva: 'https://encrypted-tbn0.gstatic.com/porca',
+    miniatura: 'https://encrypted-tbn0.gstatic.com/porca',
+    titulo: 'Porca sextavada',
+    credito: 'loja.exemplo.com',
+    pagina: '',
+  });
+
+  const livre = await chamar('GET', `/api/imagens/buscar?q=${encodeURIComponent('Arruela lisa M6')}`);
+  assert.equal(livre.dados.fonte, 'livre');
+  assert.equal(livre.dados.termo, 'Flat washer M6');
+  const urls = livre.dados.resultados.map((r) => r.url);
   assert.deepEqual(urls, ['https://upload.wikimedia.org/thumb/washer-a.jpg', 'https://upload.wikimedia.org/thumb/washer-b.jpg', 'https://api.openverse.org/v1/images/abc/thumb/']);
-  assert.equal(busca.dados.resultados[0].credito, 'Fulano · Wikimedia Commons · CC BY-SA 4.0');
+  assert.equal(livre.dados.resultados[0].credito, 'Fulano · Wikimedia Commons · CC BY-SA 4.0');
+  assert.equal((await chamar('GET', '/api/config')).dados.buscaGoogle, true);
 });
 
-test('salva foto da internet sem apagar foto tirada no local', async () => {
-  await chamar('POST', '/api/itens', { json: { codigo: 'WEB-1', descricao: 'Arruela lisa M6' } });
-  const automatica = await chamar('POST', '/api/fotos/WEB-1/internet', { json: {} });
-  assert.equal(automatica.status, 200, JSON.stringify(automatica.dados));
-  assert.equal(automatica.dados.origem, 'internet');
-  assert.match(automatica.dados.credito, /Fulano/);
+test('baixa a imagem escolhida e salva como foto da internet sem apagar foto tirada no local', async () => {
+  const baixada = await fetch(`${base}/api/imagens/baixar?url=${encodeURIComponent('https://loja.exemplo.com/porca.jpg')}`);
+  assert.equal(baixada.status, 200);
+  assert.equal(baixada.headers.get('content-type'), 'image/jpeg');
+  assert.equal((await chamar('GET', `/api/imagens/baixar?url=${encodeURIComponent('http://loja.exemplo.com/porca.jpg')}`)).status, 400);
+  assert.equal((await chamar('GET', `/api/imagens/baixar?url=${encodeURIComponent('https://loja.exemplo.com/nao-existe')}`)).status, 502);
+
+  await chamar('POST', '/api/itens', { json: { codigo: 'WEB-1', descricao: 'Porca hexagonal M6' } });
+  const web = { 'X-Origem': 'internet', 'X-Credito': encodeURIComponent('loja.exemplo.com') };
+  const salva = await fetch(`${base}/api/fotos/WEB-1`, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg', ...web }, body: JPEG });
+  assert.equal(salva.status, 200);
   const material = await chamar('GET', '/api/material/WEB-1');
   assert.equal(material.dados.foto.origem, 'internet');
-  assert.equal((await fetch(`${base}/fotos/${automatica.dados.arquivo}`)).headers.get('content-type'), 'image/jpeg');
+  assert.equal(material.dados.foto.credito, 'loja.exemplo.com');
 
-  // Escolher outra imagem da busca.
-  const escolhida = await chamar('POST', '/api/fotos/WEB-1/internet', { json: { url: 'https://api.openverse.org/v1/images/abc/thumb/', credito: 'Beltrano' } });
-  assert.equal(escolhida.dados.credito, 'Beltrano');
-
-  // Endereços fora da busca são recusados.
-  assert.equal((await chamar('POST', '/api/fotos/WEB-1/internet', { json: { url: 'http://169.254.169.254/x' } })).status, 400);
-
-  // Foto tirada no local fica protegida.
+  // Foto tirada no local fica protegida da busca automática.
   await chamar('PUT', '/api/fotos/WEB-1', { corpo: JPEG, tipo: 'image/jpeg' });
-  assert.equal((await chamar('POST', '/api/fotos/WEB-1/internet', { json: {} })).status, 409);
-  assert.equal((await chamar('POST', '/api/fotos/WEB-1/internet', { json: { substituir: true } })).status, 200);
-
-  await chamar('POST', '/api/itens', { json: { codigo: 'WEB-2' } });
-  assert.equal((await chamar('POST', '/api/fotos/WEB-2/internet', { json: {} })).status, 400, 'sem descrição');
-  await chamar('POST', '/api/itens', { json: { codigo: 'WEB-3', descricao: 'Peça inexistente xyz' } });
-  assert.equal((await chamar('POST', '/api/fotos/WEB-3/internet', { json: {} })).status, 404, 'nada encontrado');
+  const recusada = await fetch(`${base}/api/fotos/WEB-1`, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg', ...web }, body: JPEG });
+  assert.equal(recusada.status, 409);
+  const forcada = await fetch(`${base}/api/fotos/WEB-1`, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg', ...web, 'X-Substituir': '1' }, body: JPEG });
+  assert.equal(forcada.status, 200);
 });

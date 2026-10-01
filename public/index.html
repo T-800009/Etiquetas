@@ -56,49 +56,76 @@
       </div>
 
       <form class="layout nao-imprimir" id="imp-layout" hidden>
-        <div class="layout-grade">
-          <label>Modelo
-            <select name="modelo">
-              <option value="padrao">Padrão — 90 × 32 mm</option>
-              <option value="pequena">Pequena — 70 × 25 mm</option>
-              <option value="grande">Grande — 100 × 50 mm</option>
-              <option value="personalizado">Personalizado</option>
-            </select>
-          </label>
-          <label>Papel
-            <select name="papel">
-              <option value="A4">A4 (210 × 297 mm)</option>
-              <option value="Carta">Carta (216 × 279 mm)</option>
-            </select>
-          </label>
-          <label>Orientação
-            <select name="orientacao">
-              <option value="paisagem">Paisagem (deitada)</option>
-              <option value="retrato">Retrato (em pé)</option>
-            </select>
-          </label>
-          <label>Largura da etiqueta (mm) <input name="largura" type="number" min="30" max="200" step="0.5"></label>
-          <label>Altura da etiqueta (mm) <input name="altura" type="number" min="15" max="150" step="0.5"></label>
-          <label>Margem da folha (mm) <input name="margem" type="number" min="0" max="40" step="0.5"></label>
-          <label>Espaço entre etiquetas (mm) <input name="espaco" type="number" min="0" max="20" step="0.5"></label>
-          <label>Cópias ao selecionar <input name="copias" type="number" min="1" max="99" step="1"></label>
-          <label>Ao lado do texto
-            <select name="lateral">
-              <option value="foto">Foto do material</option>
-              <option value="qr">QR code</option>
-              <option value="nada">Nada</option>
-            </select>
-          </label>
-          <label>Pular posições na 1ª folha <input name="pular" type="number" min="0" max="200" step="1"></label>
-        </div>
-        <div class="layout-opcoes">
-          <label class="check"><input type="checkbox" name="corte"> Linhas de corte tracejadas</label>
-          <label class="check"><input type="checkbox" name="centralizar"> Centralizar na folha</label>
+        <div class="layout-secoes">
+          <fieldset>
+            <legend>Folha e tamanho da etiqueta</legend>
+            <div class="layout-grade">
+              <label>Modelo
+                <select name="modelo">
+                  <option value="padrao">Padrão — 90 × 32 mm</option>
+                  <option value="pequena">Pequena — 70 × 25 mm</option>
+                  <option value="grande">Grande — 100 × 50 mm</option>
+                  <option value="personalizado">Personalizado</option>
+                </select>
+              </label>
+              <label>Papel
+                <select name="papel">
+                  <option value="A4">A4 (210 × 297 mm)</option>
+                  <option value="Carta">Carta (216 × 279 mm)</option>
+                </select>
+              </label>
+              <label>Orientação
+                <select name="orientacao">
+                  <option value="paisagem">Paisagem (deitada)</option>
+                  <option value="retrato">Retrato (em pé)</option>
+                </select>
+              </label>
+              <label>Largura (mm) <input name="largura" type="number" min="30" max="200" step="0.5"></label>
+              <label>Altura (mm) <input name="altura" type="number" min="15" max="150" step="0.5"></label>
+              <label>Margem da folha (mm) <input name="margem" type="number" min="0" max="40" step="0.5"></label>
+              <label>Espaço entre etiquetas (mm) <input name="espaco" type="number" min="0" max="20" step="0.5"></label>
+              <label>Cópias ao selecionar <input name="copias" type="number" min="1" max="99" step="1"></label>
+              <label>Pular posições na 1ª folha <input name="pular" type="number" min="0" max="200" step="1"></label>
+            </div>
+            <div class="layout-opcoes">
+              <label class="check"><input type="checkbox" name="corte"> Linhas de corte tracejadas</label>
+              <label class="check"><input type="checkbox" name="centralizar"> Centralizar na folha</label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Tamanho das letras</legend>
+            <div class="faixa"><span>Todas as letras</span><button type="button" class="botao icone" data-passo="-10" aria-label="Diminuir Todas as letras">−</button><input type="range" name="letra" min="50" max="200" step="5" aria-label="Todas as letras"><output>100%</output><button type="button" class="botao icone" data-passo="10" aria-label="Aumentar Todas as letras">+</button></div>
+            <div class="faixa"><span>Código</span><button type="button" class="botao icone" data-passo="-10" aria-label="Diminuir Código">−</button><input type="range" name="tCodigo" min="50" max="200" step="5" aria-label="Código"><output>100%</output><button type="button" class="botao icone" data-passo="10" aria-label="Aumentar Código">+</button></div>
+            <div class="faixa"><span>Descrição</span><button type="button" class="botao icone" data-passo="-10" aria-label="Diminuir Descrição">−</button><input type="range" name="tDescricao" min="50" max="200" step="5" aria-label="Descrição"><output>100%</output><button type="button" class="botao icone" data-passo="10" aria-label="Aumentar Descrição">+</button></div>
+            <div class="faixa"><span>Endereço</span><button type="button" class="botao icone" data-passo="-10" aria-label="Diminuir Endereço">−</button><input type="range" name="tEndereco" min="50" max="200" step="5" aria-label="Endereço"><output>100%</output><button type="button" class="botao icone" data-passo="10" aria-label="Aumentar Endereço">+</button></div>
+            <div class="faixa"><span>Referência</span><button type="button" class="botao icone" data-passo="-10" aria-label="Diminuir Referência">−</button><input type="range" name="tReferencia" min="50" max="200" step="5" aria-label="Referência"><output>100%</output><button type="button" class="botao icone" data-passo="10" aria-label="Aumentar Referência">+</button></div>
+            <div class="faixa"><span>BOM</span><button type="button" class="botao icone" data-passo="-10" aria-label="Diminuir BOM">−</button><input type="range" name="tBom" min="50" max="200" step="5" aria-label="BOM"><output>100%</output><button type="button" class="botao icone" data-passo="10" aria-label="Aumentar BOM">+</button></div>
+            <div class="faixa"><span>Projeto / linha</span><button type="button" class="botao icone" data-passo="-10" aria-label="Diminuir Projeto / linha">−</button><input type="range" name="tProjeto" min="50" max="200" step="5" aria-label="Projeto / linha"><output>100%</output><button type="button" class="botao icone" data-passo="10" aria-label="Aumentar Projeto / linha">+</button></div>
+            <label class="linha-select">Linhas da descrição
+              <select name="linhasDescricao">
+                <option value="1">1 linha</option>
+                <option value="2">2 linhas</option>
+                <option value="3">3 linhas</option>
+              </select>
+            </label>
+          </fieldset>
+          <fieldset>
+            <legend>O que aparece na etiqueta</legend>
+            <div class="campos-check">
+              <label class="check"><input type="checkbox" name="verLogo"> Logo</label>
+              <label class="check"><input type="checkbox" name="verProjeto"> Projeto / linha</label>
+              <label class="check"><input type="checkbox" name="verReferencia"> Referência</label>
+              <label class="check"><input type="checkbox" name="verBom"> BOM</label>
+              <label class="check"><input type="checkbox" name="verDescricao"> Descrição</label>
+              <label class="check"><input type="checkbox" name="verEndereco"> Endereço</label>
+            </div>
+            <p class="dica">O código do material sempre aparece.</p>
+            <button type="button" class="botao" id="imp-layout-padrao">Restaurar layout padrão</button>
+          </fieldset>
         </div>
         <p class="dica" id="imp-layout-info"></p>
       </form>
 
-      <div class="aviso-qr nao-imprimir" id="imp-aviso-url" hidden></div>
 
       <div class="folhas-rolagem">
         <div class="folhas" id="imp-folhas"></div>
@@ -152,14 +179,13 @@
   <!-- ===================== CONFIGURAÇÕES ===================== -->
   <main id="aba-config" class="painel-aba config nao-imprimir" hidden>
     <section class="cartao">
-      <h2>Endereço usado no QR code</h2>
-      <p>Quando alguém aponta a câmera do celular para a etiqueta, o QR code abre este endereço com a foto do material.
-        Deixe em branco para usar o endereço do próprio site. Preencha só se o site tiver um domínio próprio (ex.: <code>https://etiquetas.suaempresa.com.br</code>).</p>
-      <form id="cfg-url-form" class="linha-form">
-        <input id="cfg-url" type="url" placeholder="Em branco = endereço deste site" autocomplete="off">
-        <button class="botao primario">Salvar</button>
-      </form>
-      <div class="teste-qr" id="cfg-teste"></div>
+      <h2>Busca de fotos no Google</h2>
+      <p id="cfg-google-status"></p>
+      <ol class="passos">
+        <li>Crie uma conta gratuita em <a href="https://serper.dev" target="_blank" rel="noopener">serper.dev</a> (ela traz os resultados do Google Imagens) e copie a <em>API key</em>.</li>
+        <li>No painel da Cloudflare: <strong>Workers &amp; Pages → etiquetas → Settings → Variables and Secrets → Add</strong>.</li>
+        <li>Tipo <strong>Secret</strong>, nome <code>SERPER_API_KEY</code>, valor = a chave copiada. Salve e recarregue esta página.</li>
+      </ol>
     </section>
 
     <section class="cartao">
@@ -276,7 +302,6 @@
 
   <div class="medidor" id="medidor" aria-hidden="true"></div>
 
-  <script src="/vendor/qrcode.js"></script>
   <script src="/comum.js"></script>
   <script src="/importar.js"></script>
   <script src="/app.js"></script>
