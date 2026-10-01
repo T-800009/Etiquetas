@@ -1,0 +1,6 @@
+# Dados do cadastro e fotos (ficam só no computador/servidor que roda o site)
+dados/
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

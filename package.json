@@ -1,0 +1,15 @@
+{
+  "name": "etiquetas-material",
+  "version": "1.0.0",
+  "description": "Site para gerar etiquetas de material com QR code que abre a foto do material.",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  }
+}
