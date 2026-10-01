@@ -18,7 +18,7 @@ cadastro de materiais e fotos. A tela é escura; a etiqueta impressa é branca, 
 
 - **Imprimir**: escolha os materiais (busca, filtro por projeto/linha, ordem por endereço), a quantidade
   de cópias de cada um e imprima em folha A4. Em **Tamanho e layout** dá para mudar o tamanho da etiqueta,
-  papel, margens e linhas de corte, **aumentar ou diminuir as letras** (todas de uma vez ou cada campo:
+  papel, margens e linhas de corte, **aumentar ou diminuir as letras** (todas de uma vez ou cada campo, além do tamanho do logo:
   código, descrição, endereço, referência, BOM, projeto), escolher quantas linhas a descrição usa e
   **quais campos aparecem**. O site avisa quando o texto não cabe. A etiqueta tem só o texto (sem foto e
   sem QR code).

@@ -25,6 +25,7 @@
     centralizar: true,
     // Tamanho das letras, em % do tamanho normal
     letra: 100,
+    tLogo: 100,
     tCodigo: 100,
     tDescricao: 100,
     tEndereco: 100,
@@ -40,7 +41,7 @@
     verDescricao: true,
     verEndereco: true,
   };
-  const TAMANHOS = { letra: '--fg', tCodigo: '--t-codigo', tDescricao: '--t-descricao', tEndereco: '--t-endereco', tReferencia: '--t-referencia', tBom: '--t-bom', tProjeto: '--t-projeto' };
+  const TAMANHOS = { letra: '--fg', tLogo: '--t-logo', tCodigo: '--t-codigo', tDescricao: '--t-descricao', tEndereco: '--t-endereco', tReferencia: '--t-referencia', tBom: '--t-bom', tProjeto: '--t-projeto' };
   const POR_PAGINA = 200;
 
   const estado = {
