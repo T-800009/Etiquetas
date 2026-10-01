@@ -1,7 +1,7 @@
 'use strict';
 
 (() => {
-  const { api, esc, lerLocal, gravarLocal, reduzirImagem, urlFoto, urlMaterial, qrSvg, ehEnderecoLocal, aviso } = Comum;
+  const { api, esc, lerLocal, gravarLocal, reduzirImagem, removerFundo, urlFoto, urlMaterial, qrSvg, ehEnderecoLocal, aviso } = Comum;
   const $ = (seletor, raiz = document) => raiz.querySelector(seletor);
   const $$ = (seletor, raiz = document) => Array.from(raiz.querySelectorAll(seletor));
 
@@ -291,14 +291,16 @@
     return cacheQr.get(url);
   }
 
-  // Foto do material ao lado do texto; sem foto cadastrada, usa o QR code no lugar.
-  function htmlLateral(item) {
+  // O que vai ao lado do texto. No modo foto, material sem foto fica sem nada
+  // (o texto usa a etiqueta inteira).
+  function temLateral(item) {
     const lateral = estado.layout.lateral;
-    if (lateral === 'foto') {
-      const foto = fotoDe(item.codigo);
-      if (foto) return `<div class="etq-lateral etq-foto"><img src="${esc(urlFoto(foto))}" alt=""></div>`;
-    }
-    return `<div class="etq-lateral etq-qr">${qrDe(item.codigo)}</div>`;
+    return lateral === 'qr' || (lateral === 'foto' && Boolean(fotoDe(item.codigo)));
+  }
+
+  function htmlLateral(item) {
+    if (estado.layout.lateral === 'qr') return `<div class="etq-lateral etq-qr">${qrDe(item.codigo)}</div>`;
+    return `<div class="etq-lateral etq-foto"><img src="${esc(urlFoto(fotoDe(item.codigo)))}" alt=""></div>`;
   }
 
   function htmlEtiqueta(item, { escalas = {}, lateral = '', classes = '' } = {}) {
@@ -311,7 +313,7 @@
         ${item.bom ? `<div class="etq-bom"${s('bom')}>${esc(item.bom)}</div>` : ''}
         <div class="etq-rodape"><span class="etq-desc"${s('descricao')}>${esc(item.descricao)}</span><span class="etq-end"${s('endereco')}>${esc(item.endereco)}</span></div>
       </div>
-      ${estado.layout.lateral === 'nada' ? '' : lateral || '<div class="etq-lateral"></div>'}
+      ${temLateral(item) ? lateral || '<div class="etq-lateral"></div>' : ''}
     </div>`;
   }
 
@@ -326,8 +328,8 @@
   const cacheEscalas = new Map();
 
   function medirEscalas(itens, g) {
-    const chaveLayout = `${g.w}x${g.h}|${estado.layout.lateral === 'nada'}|${estado.config.logo}`;
-    const chave = (i) => `${chaveLayout}|${i.codigo}|${i.referencia}|${i.bom}|${i.descricao}|${i.endereco}|${i.projeto}`;
+    const chaveLayout = `${g.w}x${g.h}|${estado.config.logo}`;
+    const chave = (i) => `${chaveLayout}|${temLateral(i)}|${i.codigo}|${i.referencia}|${i.bom}|${i.descricao}|${i.endereco}|${i.projeto}`;
     const faltando = itens.filter((i) => !cacheEscalas.has(chave(i)));
     if (faltando.length) {
       const medidor = $('#medidor');
@@ -417,7 +419,7 @@
         const html = pagina.map((item, idx) => {
           const classes = `${idx % g.cols === 0 ? ' col0' : ''}${idx < g.cols ? ' lin0' : ''}${item ? '' : ' vazia'}`;
           if (!item) return `<div class="etq${classes}"></div>`;
-          return htmlEtiqueta(item, { escalas: escalas.get(item.id), lateral: l.lateral === 'nada' ? '' : htmlLateral(item), classes });
+          return htmlEtiqueta(item, { escalas: escalas.get(item.id), lateral: temLateral(item) ? htmlLateral(item) : '', classes });
         });
         return `<div class="${classeFolha}">${html.join('')}</div>`;
       })
@@ -432,7 +434,7 @@
   function atualizarAvisoUrl() {
     const aviso = $('#imp-aviso-url');
     const base = estado.config.urlBase || location.origin;
-    aviso.hidden = !(estado.layout.lateral !== 'nada' && estado.selecao.size && ehEnderecoLocal(base));
+    aviso.hidden = !(estado.layout.lateral === 'qr' && estado.selecao.size && ehEnderecoLocal(base));
     aviso.innerHTML = `<strong>Atenção:</strong> os QR codes estão apontando para <code>${esc(base)}</code>, que só funciona neste computador — o celular não vai abrir.
       Para testar com o celular, use o site publicado na Cloudflare.`;
   }
@@ -630,8 +632,31 @@
     return api('PUT', `/api/fotos/${encodeURIComponent(codigo)}`, blob);
   }
 
-  function fotoDaInternet(codigo, opcoes = {}) {
-    return api('POST', `/api/fotos/${encodeURIComponent(codigo)}/internet`, opcoes);
+  function buscarImagens(termo) {
+    return api('GET', `/api/imagens/buscar?q=${encodeURIComponent(termo)}`);
+  }
+
+  // Baixa a imagem (pelo servidor) e tira o fundo. Se o site original bloquear,
+  // tenta a miniatura do Google.
+  async function prepararFotoInternet(resultado) {
+    let ultimoErro;
+    for (const endereco of [resultado.url, resultado.reserva].filter(Boolean)) {
+      try {
+        const resp = await api('GET', `/api/imagens/baixar?url=${encodeURIComponent(endereco)}`, undefined, { bruto: true });
+        const { blob } = await removerFundo(await resp.blob());
+        return { blob, credito: resultado.credito || '' };
+      } catch (err) {
+        if (err.status === 401) throw err;
+        ultimoErro = err;
+      }
+    }
+    throw ultimoErro || new Error('Não foi possível baixar esta imagem.');
+  }
+
+  function salvarFotoInternet(codigo, preparada, { substituir = false } = {}) {
+    const extras = { 'X-Origem': 'internet', 'X-Credito': encodeURIComponent(preparada.credito) };
+    if (substituir) extras['X-Substituir'] = '1';
+    return api('PUT', `/api/fotos/${encodeURIComponent(codigo)}`, preparada.blob, { extras });
   }
 
   // ---- Fotos da internet em lote ------------------------------------------------
@@ -644,7 +669,7 @@
       const chave = i.codigo.toUpperCase();
       if (vistos.has(chave) || !i.descricao || fotoDe(i.codigo)) continue;
       vistos.add(chave);
-      lista.push(i.codigo);
+      lista.push({ codigo: i.codigo, descricao: i.descricao });
     }
     return lista;
   }
@@ -671,7 +696,7 @@
     if (
       !confirm(
         `Buscar na internet uma foto pela descrição para ${codigos.length} materia${codigos.length > 1 ? 'is' : 'l'} sem foto?\n\n` +
-          'O site usa a primeira foto encontrada. Ela é parecida com o material, mas pode não ser a peça exata: confira e troque quando precisar (no Editar há a opção de escolher entre várias).',
+          'O site usa a primeira foto encontrada e tira o fundo. Ela é parecida com o material, mas pode não ser a peça exata: confira e troque quando precisar (no Editar dá para escolher entre várias).',
       )
     )
       return;
@@ -679,16 +704,26 @@
     let naoAchou = 0;
     let erros = 0;
     try {
-      for (const codigo of codigos) {
+      for (const { codigo, descricao } of codigos) {
         if (lote.parar) break;
         atualizarBotaoWeb();
         try {
-          const foto = await fotoDaInternet(codigo);
-          estado.fotosPorCodigo.set(codigo.toUpperCase(), foto);
+          const { resultados } = await buscarImagens(descricao);
+          let foto = null;
+          // Tenta as primeiras opções até uma baixar.
+          for (const resultado of resultados.slice(0, 3)) {
+            try {
+              foto = await salvarFotoInternet(codigo, await prepararFotoInternet(resultado));
+              break;
+            } catch (err) {
+              if (err.status === 401 || err.status === 409) throw err;
+            }
+          }
+          if (foto) estado.fotosPorCodigo.set(codigo.toUpperCase(), foto);
+          else naoAchou += 1;
         } catch (err) {
           if (err.status === 401 || err.status === 429) throw err;
-          if (err.status === 404) naoAchou += 1;
-          else erros += 1;
+          erros += 1;
         }
         lote.feitos += 1;
         if (lote.feitos % 5 === 0) renderTabela();
@@ -716,15 +751,15 @@
     $('#busca-status').textContent = 'Buscando…';
     grade.innerHTML = '';
     try {
-      const r = await api('GET', `/api/imagens/buscar?q=${encodeURIComponent(termo)}`);
+      const r = await buscarImagens(termo);
       resultadosBusca = r.resultados;
       $('#busca-status').textContent = resultadosBusca.length
-        ? `Clique na foto que mais se parece com o material. (Buscado como: “${r.termo}”)`
+        ? `Clique na foto que mais se parece com o material. O fundo é removido automaticamente. (${r.fonte === 'google' ? 'Google Imagens' : `Fotos livres — buscado como “${r.termo}”`})`
         : `Nada encontrado para “${r.termo}”. Tente palavras mais simples, por exemplo só o tipo da peça.`;
       grade.innerHTML = resultadosBusca
         .map(
           (f, i) => `<button type="button" class="resultado" data-i="${i}" title="${esc(f.titulo)}">
-            <img src="${esc(f.url)}" alt="${esc(f.titulo)}" loading="lazy" referrerpolicy="no-referrer"><span>${esc(f.credito)}</span></button>`,
+            <img src="${esc(f.miniatura || f.url)}" alt="${esc(f.titulo)}" loading="lazy" referrerpolicy="no-referrer"><span>${esc(f.credito)}</span></button>`,
         )
         .join('');
     } catch (err) {
@@ -743,13 +778,22 @@
     e.preventDefault();
     buscarNaInternet();
   });
-  $('#busca-resultados').addEventListener('click', (e) => {
+  $('#busca-resultados').addEventListener('click', async (e) => {
     const botao = e.target.closest('.resultado');
-    if (!botao) return;
-    const escolhida = resultadosBusca[Number(botao.dataset.i)];
-    resolverBusca?.(escolhida);
-    resolverBusca = null;
-    dlgBusca.close();
+    if (!botao || $('#busca-resultados').classList.contains('carregando')) return;
+    $('#busca-resultados').classList.add('carregando');
+    $('#busca-status').textContent = 'Baixando a foto e removendo o fundo…';
+    try {
+      const preparada = await prepararFotoInternet(resultadosBusca[Number(botao.dataset.i)]);
+      resolverBusca?.(preparada);
+      resolverBusca = null;
+      dlgBusca.close();
+    } catch (err) {
+      $('#busca-status').textContent = `${err.message} Escolha outra foto.`;
+      botao.disabled = true;
+    } finally {
+      $('#busca-resultados').classList.remove('carregando');
+    }
   });
   dlgBusca.addEventListener('close', () => {
     resolverBusca?.(null);
@@ -770,7 +814,7 @@
     let credito = '';
     if (material.fotoNova) url = material.urlPrevia = URL.createObjectURL(material.fotoNova);
     else if (material.fotoWeb) {
-      url = material.fotoWeb.url;
+      url = material.urlPrevia = URL.createObjectURL(material.fotoWeb.blob);
       credito = material.fotoWeb.credito;
     } else if (!material.removerFoto && material.item) {
       const foto = fotoDe(material.item.codigo);
@@ -838,7 +882,7 @@
     try {
       const salvo = material.item ? await api('PUT', `/api/itens/${material.item.id}`, dados) : await api('POST', '/api/itens', dados);
       if (material.fotoNova) await enviarFoto(salvo.codigo, material.fotoNova);
-      else if (material.fotoWeb) await fotoDaInternet(salvo.codigo, { url: material.fotoWeb.url, credito: material.fotoWeb.credito, substituir: true });
+      else if (material.fotoWeb) await salvarFotoInternet(salvo.codigo, material.fotoWeb, { substituir: true });
       else if (material.removerFoto) await api('DELETE', `/api/fotos/${encodeURIComponent(salvo.codigo)}`);
       dlgMaterial.close();
       aviso('Material salvo.', 'ok');
@@ -1031,6 +1075,10 @@
       <div><div>QR code de teste — aponte a câmera do celular:</div><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a>
       ${ehEnderecoLocal(url) ? '<p class="dica"><strong>Este endereço só funciona neste computador.</strong> Publique o site na Cloudflare para os celulares conseguirem abrir.</p>' : ''}</div>`;
 
+    $('#cfg-google-status').innerHTML = c.buscaGoogle
+      ? '<strong>Ativa.</strong> As fotos são buscadas no Google Imagens.'
+      : '<strong>Sem chave do Google.</strong> Por enquanto as fotos vêm de bancos de fotos livres (Wikimedia Commons e Openverse), que têm menos peças. Para buscar no Google:';
+    $('.passos').hidden = c.buscaGoogle;
     $('#cfg-logo-img').src = c.logo;
     $('#cfg-logo-padrao').hidden = !c.logoPersonalizado;
 

@@ -1,5 +1,5 @@
 // Simula, nos testes, a IA de tradução da Cloudflare e os sites de fotos
-// (Wikimedia Commons e Openverse), que só existem fora do ambiente de teste.
+// (Google via Serper, Wikimedia Commons e Openverse), que só existem fora do ambiente de teste.
 import { WorkerEntrypoint } from 'cloudflare:workers';
 
 // JPEG mínimo, só para passar na checagem de tipo de imagem.
@@ -42,6 +42,14 @@ function commons(termo) {
 export default {
   async fetch(request) {
     const url = new URL(request.url);
+    if (url.hostname === 'google.serper.dev') {
+      if (request.headers.get('x-api-key') !== 'chave-teste') return new Response('{}', { status: 403 });
+      const { q } = await request.json();
+      const images = q.startsWith('Porca')
+        ? [{ title: 'Porca sextavada', imageUrl: 'https://loja.exemplo.com/porca.jpg', thumbnailUrl: 'https://encrypted-tbn0.gstatic.com/porca', domain: 'loja.exemplo.com' }]
+        : [];
+      return Response.json({ images });
+    }
     if (url.hostname === 'commons.wikimedia.org') {
       const termo = url.searchParams.get('gsrsearch').replace(' filetype:bitmap', '');
       return Response.json(commons(termo));
@@ -53,7 +61,7 @@ export default {
         : [];
       return Response.json({ results });
     }
-    if (url.hostname === 'upload.wikimedia.org' || url.pathname.endsWith('/thumb/')) return new Response(JPEG, { headers: { 'Content-Type': 'image/jpeg' } });
+    if (['upload.wikimedia.org', 'encrypted-tbn0.gstatic.com'].includes(url.hostname) || url.href === 'https://loja.exemplo.com/porca.jpg' || url.pathname.endsWith('/thumb/')) return new Response(JPEG, { headers: { 'Content-Type': 'image/jpeg' } });
     return new Response('não encontrado', { status: 404 });
   },
 };

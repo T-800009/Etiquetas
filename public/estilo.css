@@ -305,6 +305,8 @@ input[type="checkbox"] { accent-color: var(--vermelho); }
 .dialogo-busca { width: min(900px, calc(100vw - 24px)); }
 .grade-busca { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; max-height: 55vh; overflow: auto; }
 .grade-busca:empty { display: none; }
+.grade-busca.carregando { opacity: 0.6; pointer-events: none; }
+.passos { margin: 0; padding-left: 20px; color: var(--texto-2); display: flex; flex-direction: column; gap: 4px; }
 .resultado {
   display: flex;
   flex-direction: column;
@@ -316,6 +318,7 @@ input[type="checkbox"] { accent-color: var(--vermelho); }
   cursor: pointer;
   text-align: left;
 }
+.resultado:disabled { opacity: 0.4; }
 .resultado:hover, .resultado:focus-visible { border-color: var(--vermelho); box-shadow: 0 0 0 2px var(--vermelho-claro); }
 .resultado img { width: 100%; aspect-ratio: 1; object-fit: contain; background: var(--fundo); border-radius: 4px; }
 .resultado span { font-size: 11px; color: var(--texto-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

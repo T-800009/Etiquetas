@@ -163,6 +163,16 @@
     </section>
 
     <section class="cartao">
+      <h2>Busca de fotos no Google</h2>
+      <p id="cfg-google-status"></p>
+      <ol class="passos">
+        <li>Crie uma conta gratuita em <a href="https://serper.dev" target="_blank" rel="noopener">serper.dev</a> (ela traz os resultados do Google Imagens) e copie a <em>API key</em>.</li>
+        <li>No painel da Cloudflare: <strong>Workers &amp; Pages → etiquetas → Settings → Variables and Secrets → Add</strong>.</li>
+        <li>Tipo <strong>Secret</strong>, nome <code>SERPER_API_KEY</code>, valor = a chave copiada. Salve e recarregue esta página.</li>
+      </ol>
+    </section>
+
+    <section class="cartao">
       <h2>Logo da etiqueta</h2>
       <p>Logo impresso no canto da etiqueta. Envie o arquivo oficial em PNG ou JPG (de preferência com fundo branco ou transparente).</p>
       <div class="logo-config">

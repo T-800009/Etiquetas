@@ -17,9 +17,8 @@ com a **foto daquele material**, a descrição, a referência, o BOM e onde ele 
 
 ## O que o site faz
 
-- **Foto na etiqueta**: ao lado do texto, a etiqueta mostra a **foto do material** (padrão). Material ainda
-  sem foto sai com o QR code no lugar. Em *Tamanho e layout → Ao lado do texto* dá para trocar para
-  "QR code" ou "Nada".
+- **Foto na etiqueta**: ao lado do texto, a etiqueta mostra a **foto do material** (padrão). Material sem
+  foto não leva nada nesse espaço. Em *Tamanho e layout → Ao lado do texto* dá para trocar para "QR code" ou "Nada".
 - **Imprimir**: escolha os materiais (busca, filtro por projeto/linha, ordem por endereço), a quantidade
   de cópias de cada um e imprima em folha A4. Tamanho da etiqueta, margens, orientação e linhas de corte
   são configuráveis. Textos compridos diminuem para caber, em vez de serem cortados como no Excel.
@@ -79,12 +78,18 @@ são atualizados em vez de duplicados.
   **Tirar foto do material**.
 - **Pelo computador**: em **Materiais**, clique no quadrinho "+ foto" ao lado do material.
 
-- **Fotos da internet**: em **Materiais → Buscar fotos na internet** o site procura, para cada material sem
-  foto, uma foto pela descrição e usa a primeira encontrada. Ao editar um material, **Buscar na internet**
-  mostra várias opções para escolher. As fotos vêm do Wikimedia Commons e do Openverse (fotos livres, sem
-  precisar de chave); a descrição é traduzida para inglês pela IA da Cloudflare antes da busca. Essas fotos
-  ficam com o selo **web** na lista e são trocadas quando alguém tira a foto no local. O autor e a licença
-  aparecem em letra pequena no rodapé da página do QR code, como pedem as licenças dessas fotos.
+- **Fotos da internet (Google)**: em **Materiais → Buscar fotos na internet** o site procura, para cada
+  material sem foto, uma foto pela descrição, **tira o fundo** e salva. Ao editar um material,
+  **Buscar na internet** mostra várias opções para escolher. A busca usa o **Google Imagens** pelo serviço
+  [Serper.dev](https://serper.dev) (conta gratuita com créditos de busca); sem a chave configurada, usa
+  bancos de fotos livres (Wikimedia Commons e Openverse). Essas fotos ficam com o selo **web** na lista e são
+  trocadas quando alguém tira a foto no local.
+  - Para ativar o Google: crie a conta no Serper.dev, copie a *API key* e, no painel da Cloudflare, vá em
+    **Workers & Pages → etiquetas → Settings → Variables and Secrets → Add**, tipo *Secret*, nome
+    `SERPER_API_KEY`.
+  - A remoção de fundo funciona bem em fotos de produto com fundo liso (branco, cinza); fotos com cenário
+    no fundo são salvas como estão.
+  - Fotos do Google pertencem aos seus donos; use para identificação interna dos materiais.
 
 As fotos são reduzidas automaticamente (no máximo 1280 px) antes de enviar.
 
