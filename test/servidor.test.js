@@ -204,7 +204,7 @@ test('telas e página do QR code são servidas', async () => {
   assert.match(await inicio.text(), /app\.js/);
   const logo = await fetch(`${base}/logo`);
   assert.equal(logo.status, 200);
-  assert.match(logo.headers.get('content-type'), /svg/);
+  assert.match(logo.headers.get('content-type'), /png/);
 });
 
 test('busca no Google quando há chave e usa fontes livres quando o Google não acha', async () => {

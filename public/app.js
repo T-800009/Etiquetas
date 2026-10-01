@@ -40,7 +40,19 @@
     verBom: true,
     verDescricao: true,
     verEndereco: true,
+    // Cores (texto preto e logo com as cores do arquivo, por padrão)
+    corTexto: '#000000',
+    cCodigo: '#000000',
+    cDescricao: '#000000',
+    cEndereco: '#000000',
+    cReferencia: '#000000',
+    cBom: '#000000',
+    cProjeto: '#000000',
+    logoOriginal: true,
+    corLogo: '#000000',
   };
+  const CORES = { cCodigo: '--c-codigo', cDescricao: '--c-descricao', cEndereco: '--c-endereco', cReferencia: '--c-referencia', cBom: '--c-bom', cProjeto: '--c-projeto' };
+  const corValida = (c, padrao = '#000000') => (/^#[0-9a-f]{6}$/i.test(c || '') ? c : padrao);
   const TAMANHOS = { letra: '--fg', tLogo: '--t-logo', tCodigo: '--t-codigo', tDescricao: '--t-descricao', tEndereco: '--t-endereco', tReferencia: '--t-referencia', tBom: '--t-bom', tProjeto: '--t-projeto' };
   const POR_PAGINA = 200;
 
@@ -48,7 +60,7 @@
     itens: [],
     fotos: {},
     fotosPorCodigo: new Map(),
-    config: { urlBase: '', temPin: false, logo: '/img/logo-padrao.svg' },
+    config: { urlBase: '', temPin: false, logo: '/img/logo-padrao.png' },
     selecao: new Map(), // id do item -> número de cópias
     layout: carregarLayout(),
     zoom: lerLocal('etiquetas.zoom', 60),
@@ -299,6 +311,11 @@
     const vars = { '--pw': g.pw, '--ph': g.ph, '--w': g.w, '--h': g.h, '--gap': g.gap, '--ml': g.ml, '--mt': g.mt };
     for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, `${v}mm`);
     el.style.setProperty('--cols', g.cols);
+    const lc = estado.layout;
+    el.style.setProperty('--c-geral', corValida(lc.corTexto));
+    for (const [campo, variavel] of Object.entries(CORES)) el.style.setProperty(variavel, corValida(lc[campo], corValida(lc.corTexto)));
+    el.style.setProperty('--c-logo', corValida(lc.corLogo));
+    el.style.setProperty('--logo-url', `url("${String(estado.config.logo).replace(/["\\]/g, '')}")`);
     const l = estado.layout;
     for (const [campo, variavel] of Object.entries(TAMANHOS)) el.style.setProperty(variavel, (Number(l[campo]) || 100) / 100);
     el.style.setProperty('--linhas-descricao', Math.min(3, Math.max(1, Number(l.linhasDescricao) || 2)));
@@ -309,7 +326,7 @@
     const s = (k) => (escalas[k] && escalas[k] < 1 ? ` style="--s:${escalas[k]}"` : '');
     const topo =
       l.verLogo || l.verProjeto
-        ? `<div class="etq-topo">${l.verLogo ? `<img class="etq-logo" src="${esc(estado.config.logo)}" alt="">` : '<span></span>'}${l.verProjeto ? `<span class="etq-projeto"${s('projeto')}>${esc(item.projeto)}</span>` : ''}</div>`
+        ? `<div class="etq-topo">${l.verLogo ? (l.logoOriginal ? `<img class="etq-logo" src="${esc(estado.config.logo)}" alt="">` : '<span class="etq-logo etq-logo-cor" role="img" aria-label="Logo"></span>') : '<span></span>'}${l.verProjeto ? `<span class="etq-projeto"${s('projeto')}>${esc(item.projeto)}</span>` : ''}</div>`
         : '';
     const rodape =
       l.verDescricao || l.verEndereco
@@ -460,6 +477,7 @@
       else campo.value = valor;
       if (campo.type === 'range') campo.nextElementSibling.textContent = `${valor}%`;
     }
+    $('#cor-logo').hidden = Boolean(estado.layout.logoOriginal);
   }
   formLayout.addEventListener('input', (e) => {
     const campo = e.target;
@@ -472,6 +490,8 @@
     } else l[campo.name] = campo.value;
 
     if (campo.name === 'modelo' && MODELOS[campo.value]) Object.assign(l, MODELOS[campo.value]);
+    // Mudar a cor de "todo o texto" pinta todos os campos; depois cada um pode ser ajustado.
+    if (campo.name === 'corTexto') for (const c of Object.keys(CORES)) l[c] = campo.value;
     if (campo.name === 'largura' || campo.name === 'altura') {
       const modelo = Object.entries(MODELOS).find(([, m]) => m.largura === l.largura && m.altura === l.altura);
       l.modelo = modelo ? modelo[0] : 'personalizado';

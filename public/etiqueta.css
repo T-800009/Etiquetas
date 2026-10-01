@@ -27,7 +27,7 @@
   display: flex;
   gap: calc(var(--f) * 0.05);
   overflow: hidden;
-  color: #000;
+  color: var(--c-geral, #000);
   background: #fff;
   font-family: Calibri, Carlito, "Segoe UI", Arial, sans-serif;
   line-height: 1.12;
@@ -60,12 +60,17 @@
 .etq-logo {
   flex: 0 0 auto;
   height: calc(var(--f) * 0.17 * var(--t-logo, 1));
-  width: calc(var(--f) * 0.36 * var(--t-logo, 1));
+  width: calc(var(--f) * 0.5 * var(--t-logo, 1));
   max-width: 75%;
   object-fit: contain;
   object-position: left center;
 }
-.etq-projeto { min-width: 0; font-size: calc(var(--f) * 0.09 * var(--fg, 1) * var(--t-projeto, 1) * var(--s, 1)); white-space: nowrap; overflow: hidden; }
+.etq-logo-cor {
+  background: var(--c-logo, #000);
+  -webkit-mask: var(--logo-url) left center / contain no-repeat;
+  mask: var(--logo-url) left center / contain no-repeat;
+}
+.etq-projeto { color: var(--c-projeto, inherit); min-width: 0; font-size: calc(var(--f) * 0.09 * var(--fg, 1) * var(--t-projeto, 1) * var(--s, 1)); white-space: nowrap; overflow: hidden; }
 
 .etq-codigo,
 .etq-ref,
@@ -74,9 +79,9 @@
   white-space: nowrap;
   overflow: hidden;
 }
-.etq-codigo { font-weight: 700; font-size: calc(var(--f) * 0.14 * var(--fg, 1) * var(--t-codigo, 1) * var(--s, 1)); line-height: 1.05; }
-.etq-ref { font-size: calc(var(--f) * 0.092 * var(--fg, 1) * var(--t-referencia, 1) * var(--s, 1)); }
-.etq-bom { font-size: calc(var(--f) * 0.092 * var(--fg, 1) * var(--t-bom, 1) * var(--s, 1)); }
+.etq-codigo { color: var(--c-codigo, inherit); font-weight: 700; font-size: calc(var(--f) * 0.14 * var(--fg, 1) * var(--t-codigo, 1) * var(--s, 1)); line-height: 1.05; }
+.etq-ref { color: var(--c-referencia, inherit); font-size: calc(var(--f) * 0.092 * var(--fg, 1) * var(--t-referencia, 1) * var(--s, 1)); }
+.etq-bom { color: var(--c-bom, inherit); font-size: calc(var(--f) * 0.092 * var(--fg, 1) * var(--t-bom, 1) * var(--s, 1)); }
 
 .etq-rodape {
   display: flex;
@@ -85,6 +90,7 @@
   min-height: 0;
 }
 .etq-desc {
+  color: var(--c-descricao, inherit);
   flex: 1 1 0;
   min-width: 0;
   font-size: calc(var(--f) * 0.085 * var(--fg, 1) * var(--t-descricao, 1) * var(--s, 1));
@@ -95,6 +101,7 @@
   overflow-wrap: anywhere;
 }
 .etq-end {
+  color: var(--c-endereco, inherit);
   flex: 0 0 auto;
   max-width: 60%;
   font-weight: 700;

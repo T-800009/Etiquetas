@@ -12,7 +12,7 @@
 <body>
   <header class="topo nao-imprimir">
     <div class="marca">
-      <img class="marca-logo" src="/img/logo-padrao.svg" alt="">
+      <img class="marca-logo" src="/img/logo-padrao.png" alt="">
       <span class="marca-nome">Etiquetas de Material</span>
     </div>
     <nav class="abas" role="tablist">
@@ -121,6 +121,18 @@
               <label class="check"><input type="checkbox" name="verEndereco"> Endereço</label>
             </div>
             <p class="dica">O código do material sempre aparece.</p>
+          </fieldset>
+          <fieldset>
+            <legend>Cores</legend>
+            <label class="cor"><span>Todo o texto</span><input type="color" name="corTexto"></label>
+            <label class="cor"><span>Código</span><input type="color" name="cCodigo"></label>
+            <label class="cor"><span>Descrição</span><input type="color" name="cDescricao"></label>
+            <label class="cor"><span>Endereço</span><input type="color" name="cEndereco"></label>
+            <label class="cor"><span>Referência</span><input type="color" name="cReferencia"></label>
+            <label class="cor"><span>BOM</span><input type="color" name="cBom"></label>
+            <label class="cor"><span>Projeto / linha</span><input type="color" name="cProjeto"></label>
+            <label class="check"><input type="checkbox" name="logoOriginal"> Logo com as cores originais</label>
+            <label class="cor" id="cor-logo"><span>Cor do logo</span><input type="color" name="corLogo"></label>
             <button type="button" class="botao" id="imp-layout-padrao">Restaurar layout padrão</button>
           </fieldset>
         </div>
@@ -193,7 +205,7 @@
       <h2>Logo da etiqueta</h2>
       <p>Logo impresso no canto da etiqueta. Envie o arquivo oficial em PNG ou JPG (de preferência com fundo branco ou transparente).</p>
       <div class="logo-config">
-        <div class="logo-previa"><img id="cfg-logo-img" src="/img/logo-padrao.svg" alt="Logo atual"></div>
+        <div class="logo-previa"><img id="cfg-logo-img" src="/img/logo-padrao.png" alt="Logo atual"></div>
         <div class="botoes">
           <label class="botao">Enviar logo <input id="cfg-logo-arquivo" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
           <button class="botao" id="cfg-logo-padrao">Voltar ao padrão</button>

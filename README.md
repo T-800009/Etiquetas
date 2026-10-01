@@ -55,7 +55,7 @@ Depois disso, cada alteração enviada para o branch `main` publica o site de no
 
 ### Primeira configuração
 
-1. **Logo**: o site vem com um logo provisório desenhado. Envie o arquivo oficial (PNG/JPG) em Configurações.
+1. **Logo**: o site já vem com o logo BYD "Build Your Dreams". Para trocar, envie outro arquivo (PNG/JPG) em Configurações.
 2. **PIN de edição** (recomendado): o site é acessível pela internet. Com PIN, qualquer um com o link pode
    consultar e imprimir, mas só quem sabe o PIN altera o cadastro e as fotos.
 
