@@ -112,7 +112,7 @@
       <div class="barra-direita">
         <button class="botao" id="mat-excluir-sel" hidden>Excluir selecionados</button>
         <button class="botao" id="mat-exportar">Exportar para Excel</button>
-        <button class="botao" id="mat-gerar-ia" hidden>Gerar imagens com IA</button>
+        <button class="botao" id="mat-buscar-web" hidden>Buscar fotos na internet</button>
         <button class="botao" id="mat-importar">Importar planilha</button>
         <button class="botao primario" id="mat-novo">+ Novo material</button>
       </div>
@@ -209,7 +209,7 @@
           <div class="botoes">
             <label class="botao">Escolher foto <input type="file" accept="image/*" id="dlg-foto-arquivo" hidden></label>
             <label class="botao so-celular">Tirar foto <input type="file" accept="image/*" capture="environment" id="dlg-foto-camera" hidden></label>
-            <button type="button" class="botao" id="dlg-foto-ia" hidden>Gerar pela descrição (IA)</button>
+            <button type="button" class="botao" id="dlg-foto-web">Buscar na internet</button>
             <button type="button" class="botao" id="dlg-foto-remover" hidden>Remover foto</button>
           </div>
           <p class="dica" id="dlg-foto-dica">A foto é ligada ao código do material: todas as etiquetas com este código mostram a mesma foto.</p>
@@ -251,6 +251,20 @@
         <button type="button" class="botao" data-fechar>Cancelar</button>
         <button type="button" class="botao primario" id="imp-confirmar" disabled>Continuar</button>
       </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialogo dialogo-busca" id="dlg-busca">
+    <form method="dialog" id="form-busca">
+      <h2>Buscar foto na internet</h2>
+      <div class="linha-form">
+        <input id="busca-termo" type="search" placeholder="Ex.: porca sextavada" autocomplete="off">
+        <button class="botao primario">Buscar</button>
+      </div>
+      <p class="dica" id="busca-status"></p>
+      <div class="grade-busca" id="busca-resultados"></div>
+      <p class="dica">Fotos livres do Wikimedia Commons e do Openverse. A busca é feita em inglês (a descrição é traduzida automaticamente).</p>
+      <div class="dialogo-botoes"><span class="espaco"></span><button type="button" class="botao" data-fechar>Cancelar</button></div>
     </form>
   </dialog>
 

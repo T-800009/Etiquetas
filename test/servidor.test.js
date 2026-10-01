@@ -30,7 +30,7 @@ async function chamar(metodo, rota, { json, corpo, tipo, pin } = {}) {
   return { status: resp.status, dados, headers: resp.headers };
 }
 
-// Cria configurações de teste: a mesma do site, mas com a IA trocada por test/ia-falsa.js.
+// Cria configurações de teste: a mesma do site, mas com a IA e a internet trocadas por test/internet-falsa.js.
 async function configuracoesDeTeste() {
   const raiz = path.join(__dirname, '..');
   const texto = await fs.readFile(path.join(raiz, 'wrangler.jsonc'), 'utf8');
@@ -39,11 +39,14 @@ async function configuracoesDeTeste() {
   delete config.$schema;
   config.main = path.join(raiz, config.main);
   config.assets.directory = path.join(raiz, config.assets.directory);
-  config.services = [{ binding: 'AI', service: 'ia-falsa', entrypoint: 'IaFalsa' }];
+  config.services = [
+    { binding: 'AI', service: 'internet-falsa', entrypoint: 'IaFalsa' },
+    { binding: 'INTERNET', service: 'internet-falsa' },
+  ];
   const principal = path.join(dadosDir, 'wrangler.json');
-  const ia = path.join(dadosDir, 'ia-falsa.json');
+  const ia = path.join(dadosDir, 'internet-falsa.json');
   await fs.writeFile(principal, JSON.stringify(config));
-  await fs.writeFile(ia, JSON.stringify({ name: 'ia-falsa', main: path.join(__dirname, 'ia-falsa.js'), compatibility_date: config.compatibility_date }));
+  await fs.writeFile(ia, JSON.stringify({ name: 'internet-falsa', main: path.join(__dirname, 'internet-falsa.js'), compatibility_date: config.compatibility_date }));
   return ['-c', principal, '-c', ia];
 }
 
@@ -203,26 +206,39 @@ test('telas e página do QR code são servidas', async () => {
   assert.match(logo.headers.get('content-type'), /svg/);
 });
 
-test('gera imagem ilustrativa pela descrição sem apagar foto real', async () => {
-  await chamar('POST', '/api/itens', { json: { codigo: 'IA-1', descricao: 'Arruela lisa M6' } });
-  const gerada = await chamar('POST', '/api/fotos/IA-1/gerar', { json: {} });
-  assert.equal(gerada.status, 200, JSON.stringify(gerada.dados));
-  assert.equal(gerada.dados.ilustrativa, true);
-  const material = await chamar('GET', '/api/material/IA-1');
-  assert.equal(material.dados.foto.ilustrativa, true);
-  assert.equal((await fetch(`${base}/fotos/${gerada.dados.arquivo}`)).headers.get('content-type'), 'image/jpeg');
+test('busca fotos na internet pela descrição traduzida', async () => {
+  const busca = await chamar('GET', `/api/imagens/buscar?q=${encodeURIComponent('Arruela lisa M6')}`);
+  assert.equal(busca.status, 200);
+  assert.equal(busca.dados.termo, 'Flat washer M6');
+  const urls = busca.dados.resultados.map((r) => r.url);
+  assert.deepEqual(urls, ['https://upload.wikimedia.org/thumb/washer-a.jpg', 'https://upload.wikimedia.org/thumb/washer-b.jpg', 'https://api.openverse.org/v1/images/abc/thumb/']);
+  assert.equal(busca.dados.resultados[0].credito, 'Fulano · Wikimedia Commons · CC BY-SA 4.0');
+});
 
-  // Foto real substitui a ilustrativa e passa a ser protegida.
-  const real = await chamar('PUT', '/api/fotos/IA-1', { corpo: JPEG, tipo: 'image/jpeg' });
-  assert.equal(real.dados.ilustrativa, false);
-  assert.equal((await chamar('POST', '/api/fotos/IA-1/gerar', { json: {} })).status, 409);
-  assert.equal((await chamar('POST', '/api/fotos/IA-1/gerar', { json: { substituir: true } })).status, 200);
+test('salva foto da internet sem apagar foto tirada no local', async () => {
+  await chamar('POST', '/api/itens', { json: { codigo: 'WEB-1', descricao: 'Arruela lisa M6' } });
+  const automatica = await chamar('POST', '/api/fotos/WEB-1/internet', { json: {} });
+  assert.equal(automatica.status, 200, JSON.stringify(automatica.dados));
+  assert.equal(automatica.dados.origem, 'internet');
+  assert.match(automatica.dados.credito, /Fulano/);
+  const material = await chamar('GET', '/api/material/WEB-1');
+  assert.equal(material.dados.foto.origem, 'internet');
+  assert.equal((await fetch(`${base}/fotos/${automatica.dados.arquivo}`)).headers.get('content-type'), 'image/jpeg');
 
-  await chamar('POST', '/api/itens', { json: { codigo: 'IA-2' } });
-  assert.equal((await chamar('POST', '/api/fotos/IA-2/gerar', { json: {} })).status, 400, 'sem descrição');
+  // Escolher outra imagem da busca.
+  const escolhida = await chamar('POST', '/api/fotos/WEB-1/internet', { json: { url: 'https://api.openverse.org/v1/images/abc/thumb/', credito: 'Beltrano' } });
+  assert.equal(escolhida.dados.credito, 'Beltrano');
 
-  await chamar('POST', '/api/itens', { json: { codigo: 'IA-3', descricao: 'ESGOTADO' } });
-  const esgotado = await chamar('POST', '/api/fotos/IA-3/gerar', { json: {} });
-  assert.equal(esgotado.status, 429);
-  assert.match(esgotado.dados.erro, /limite diário/);
+  // Endereços fora da busca são recusados.
+  assert.equal((await chamar('POST', '/api/fotos/WEB-1/internet', { json: { url: 'http://169.254.169.254/x' } })).status, 400);
+
+  // Foto tirada no local fica protegida.
+  await chamar('PUT', '/api/fotos/WEB-1', { corpo: JPEG, tipo: 'image/jpeg' });
+  assert.equal((await chamar('POST', '/api/fotos/WEB-1/internet', { json: {} })).status, 409);
+  assert.equal((await chamar('POST', '/api/fotos/WEB-1/internet', { json: { substituir: true } })).status, 200);
+
+  await chamar('POST', '/api/itens', { json: { codigo: 'WEB-2' } });
+  assert.equal((await chamar('POST', '/api/fotos/WEB-2/internet', { json: {} })).status, 400, 'sem descrição');
+  await chamar('POST', '/api/itens', { json: { codigo: 'WEB-3', descricao: 'Peça inexistente xyz' } });
+  assert.equal((await chamar('POST', '/api/fotos/WEB-3/internet', { json: {} })).status, 404, 'nada encontrado');
 });

@@ -15,15 +15,13 @@
     const base = itens[0] || {};
     document.title = `${dados.codigo} — ${base.descricao || 'Material'}`;
     const foto = urlFoto(dados.foto);
-    const ilustrativa = Boolean(dados.foto?.ilustrativa);
     const unicos = (campo) => [...new Set(itens.map((i) => i[campo]).filter(Boolean))].join(' · ');
     const locais = itens.filter((i) => i.endereco || i.projeto);
 
     conteudo.innerHTML = `
       ${
         foto
-          ? `<figure class="m-foto"><a href="${esc(foto)}" target="_blank" rel="noopener" title="Abrir foto em tamanho real"><img src="${esc(foto)}" alt="${ilustrativa ? 'Imagem ilustrativa' : 'Foto'} do material ${esc(dados.codigo)}"></a></figure>
-             ${ilustrativa ? '<p class="m-aviso-ia"><strong>Imagem ilustrativa</strong> gerada por IA a partir da descrição. Pode ser diferente do material real.</p>' : ''}`
+          ? `<figure class="m-foto"><a href="${esc(foto)}" target="_blank" rel="noopener" title="Abrir foto em tamanho real"><img src="${esc(foto)}" alt="Foto do material ${esc(dados.codigo)}"></a></figure>`
           : `<figure class="m-foto sem"><div class="grande" aria-hidden="true">📷</div><strong>Este material ainda não tem foto</strong><span>Use o botão abaixo para fotografar.</span></figure>`
       }
       <div>
@@ -43,10 +41,10 @@
           : ''
       }
       <div class="m-acoes">
-        <button class="botao ${foto && !ilustrativa ? '' : 'primario'}" id="m-tirar">${foto && !ilustrativa ? 'Tirar nova foto' : 'Tirar foto real do material'}</button>
+        <button class="botao ${foto ? '' : 'primario'}" id="m-tirar">${foto ? 'Tirar nova foto' : 'Tirar foto do material'}</button>
         <button class="botao" id="m-escolher">Escolher da galeria</button>
       </div>
-      ${dados.foto ? `<p class="m-rodape">${ilustrativa ? 'Imagem gerada' : 'Foto atualizada'} em ${new Date(dados.foto.atualizadoEm).toLocaleString('pt-BR')}</p>` : ''}`;
+      ${dados.foto ? `<p class="m-rodape">${dados.foto.credito ? `Foto: ${esc(dados.foto.credito)}` : `Foto atualizada em ${new Date(dados.foto.atualizadoEm).toLocaleString('pt-BR')}`}</p>` : ''}`;
 
     document.getElementById('m-tirar').addEventListener('click', () => document.getElementById('m-camera').click());
     document.getElementById('m-escolher').addEventListener('click', () => document.getElementById('m-galeria').click());
