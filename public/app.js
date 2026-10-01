@@ -1,7 +1,7 @@
 'use strict';
 
 (() => {
-  const { api, esc, lerLocal, gravarLocal, reduzirImagem, removerFundo, urlFoto, urlMaterial, qrSvg, ehEnderecoLocal, aviso } = Comum;
+  const { api, esc, lerLocal, gravarLocal, reduzirImagem, removerFundo, urlFoto, aviso } = Comum;
   const $ = (seletor, raiz = document) => raiz.querySelector(seletor);
   const $$ = (seletor, raiz = document) => Array.from(raiz.querySelectorAll(seletor));
 
@@ -21,10 +21,26 @@
     espaco: 0,
     copias: 1,
     pular: 0,
-    lateral: 'foto', // o que vai ao lado do texto: 'foto', 'qr' ou 'nada'
     corte: true,
     centralizar: true,
+    // Tamanho das letras, em % do tamanho normal
+    letra: 100,
+    tCodigo: 100,
+    tDescricao: 100,
+    tEndereco: 100,
+    tReferencia: 100,
+    tBom: 100,
+    tProjeto: 100,
+    linhasDescricao: 2,
+    // Campos que aparecem na etiqueta
+    verLogo: true,
+    verProjeto: true,
+    verReferencia: true,
+    verBom: true,
+    verDescricao: true,
+    verEndereco: true,
   };
+  const TAMANHOS = { letra: '--fg', tCodigo: '--t-codigo', tDescricao: '--t-descricao', tEndereco: '--t-endereco', tReferencia: '--t-referencia', tBom: '--t-bom', tProjeto: '--t-projeto' };
   const POR_PAGINA = 200;
 
   const estado = {
@@ -42,9 +58,9 @@
 
   function carregarLayout() {
     const salvo = lerLocal('etiquetas.layout', {});
-    // Layouts salvos antes da opção de foto tinham só "qr: true/false".
-    if (!salvo.lateral && 'qr' in salvo) salvo.lateral = salvo.qr ? 'qr' : 'nada';
+    // Opções antigas (foto/QR code ao lado do texto) não existem mais.
     delete salvo.qr;
+    delete salvo.lateral;
     return { ...LAYOUT_PADRAO, ...salvo };
   }
 
@@ -282,38 +298,30 @@
     const vars = { '--pw': g.pw, '--ph': g.ph, '--w': g.w, '--h': g.h, '--gap': g.gap, '--ml': g.ml, '--mt': g.mt };
     for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, `${v}mm`);
     el.style.setProperty('--cols', g.cols);
+    const l = estado.layout;
+    for (const [campo, variavel] of Object.entries(TAMANHOS)) el.style.setProperty(variavel, (Number(l[campo]) || 100) / 100);
+    el.style.setProperty('--linhas-descricao', Math.min(3, Math.max(1, Number(l.linhasDescricao) || 2)));
   }
 
-  const cacheQr = new Map();
-  function qrDe(codigo) {
-    const url = urlMaterial(estado.config.urlBase, codigo);
-    if (!cacheQr.has(url)) cacheQr.set(url, qrSvg(url, { margem: 1 }));
-    return cacheQr.get(url);
-  }
-
-  // O que vai ao lado do texto. No modo foto, material sem foto fica sem nada
-  // (o texto usa a etiqueta inteira).
-  function temLateral(item) {
-    const lateral = estado.layout.lateral;
-    return lateral === 'qr' || (lateral === 'foto' && Boolean(fotoDe(item.codigo)));
-  }
-
-  function htmlLateral(item) {
-    if (estado.layout.lateral === 'qr') return `<div class="etq-lateral etq-qr">${qrDe(item.codigo)}</div>`;
-    return `<div class="etq-lateral etq-foto"><img src="${esc(urlFoto(fotoDe(item.codigo)))}" alt=""></div>`;
-  }
-
-  function htmlEtiqueta(item, { escalas = {}, lateral = '', classes = '' } = {}) {
+  function htmlEtiqueta(item, { escalas = {}, classes = '' } = {}) {
+    const l = estado.layout;
     const s = (k) => (escalas[k] && escalas[k] < 1 ? ` style="--s:${escalas[k]}"` : '');
+    const topo =
+      l.verLogo || l.verProjeto
+        ? `<div class="etq-topo">${l.verLogo ? `<img class="etq-logo" src="${esc(estado.config.logo)}" alt="">` : '<span></span>'}${l.verProjeto ? `<span class="etq-projeto"${s('projeto')}>${esc(item.projeto)}</span>` : ''}</div>`
+        : '';
+    const rodape =
+      l.verDescricao || l.verEndereco
+        ? `<div class="etq-rodape">${l.verDescricao ? `<span class="etq-desc"${s('descricao')}>${esc(item.descricao)}</span>` : '<span class="etq-desc"></span>'}${l.verEndereco ? `<span class="etq-end"${s('endereco')}>${esc(item.endereco)}</span>` : ''}</div>`
+        : '';
     return `<div class="etq${classes}">
       <div class="etq-info">
-        <div class="etq-topo"><img class="etq-logo" src="${esc(estado.config.logo)}" alt=""><span class="etq-projeto"${s('projeto')}>${esc(item.projeto)}</span></div>
+        ${topo}
         <div class="etq-codigo"${s('codigo')}>${esc(item.codigo)}</div>
-        ${item.referencia ? `<div class="etq-ref"${s('referencia')}>${esc(item.referencia)}</div>` : ''}
-        ${item.bom ? `<div class="etq-bom"${s('bom')}>${esc(item.bom)}</div>` : ''}
-        <div class="etq-rodape"><span class="etq-desc"${s('descricao')}>${esc(item.descricao)}</span><span class="etq-end"${s('endereco')}>${esc(item.endereco)}</span></div>
+        ${l.verReferencia && item.referencia ? `<div class="etq-ref"${s('referencia')}>${esc(item.referencia)}</div>` : ''}
+        ${l.verBom && item.bom ? `<div class="etq-bom"${s('bom')}>${esc(item.bom)}</div>` : ''}
+        ${rodape}
       </div>
-      ${temLateral(item) ? lateral || '<div class="etq-lateral"></div>' : ''}
     </div>`;
   }
 
@@ -328,8 +336,9 @@
   const cacheEscalas = new Map();
 
   function medirEscalas(itens, g) {
-    const chaveLayout = `${g.w}x${g.h}|${estado.config.logo}`;
-    const chave = (i) => `${chaveLayout}|${temLateral(i)}|${i.codigo}|${i.referencia}|${i.bom}|${i.descricao}|${i.endereco}|${i.projeto}`;
+    const l = estado.layout;
+    const chaveLayout = [g.w, g.h, estado.config.logo, l.linhasDescricao, ...Object.keys(TAMANHOS).map((k) => l[k]), ...Object.keys(l).filter((k) => k.startsWith('ver')).map((k) => l[k])].join('|');
+    const chave = (i) => `${chaveLayout}|${i.codigo}|${i.referencia}|${i.bom}|${i.descricao}|${i.endereco}|${i.projeto}`;
     const faltando = itens.filter((i) => !cacheEscalas.has(chave(i)));
     if (faltando.length) {
       const medidor = $('#medidor');
@@ -358,7 +367,7 @@
       //    o que ainda sobrar termina em "…")
       const descricoes = etiquetas.map((el) => $('.etq-desc', el));
       for (let passo = 0; passo < 4; passo++) {
-        const sobrando = descricoes.map((d) => d.scrollHeight > d.clientHeight + 0.5);
+        const sobrando = descricoes.map((d) => Boolean(d) && d.scrollHeight > d.clientHeight + 0.5);
         if (!sobrando.some(Boolean)) break;
         sobrando.forEach((s, k) => {
           if (!s) return;
@@ -368,6 +377,12 @@
           descricoes[k].style.setProperty('--s', escalas[k].descricao);
         });
       }
+      // 3) marca as etiquetas em que o texto não coube na altura (letra grande demais)
+      etiquetas.forEach((el, k) => {
+        const info = $('.etq-info', el);
+        const necessario = Array.from(info.children).reduce((soma, filho) => soma + filho.scrollHeight, 0);
+        escalas[k].naoCoube = necessario > info.clientHeight + 1;
+      });
       faltando.forEach((item, k) => cacheEscalas.set(chave(item), escalas[k]));
       medidor.innerHTML = '';
     }
@@ -402,11 +417,15 @@
       $('#imp-vazio').hidden = Boolean(total);
       $('#imp-resumo').textContent = total ? 'Ajuste o tamanho da etiqueta' : 'Nenhuma etiqueta selecionada';
       $('#imp-imprimir').disabled = true;
-      atualizarAvisoUrl();
       return;
     }
 
     const escalas = medirEscalas(selecionados, g);
+    const naoCouberam = selecionados.filter((i) => escalas.get(i.id)?.naoCoube).length;
+    if (naoCouberam) {
+      $('#imp-layout-info').textContent += ` Atenção: em ${naoCouberam} material(is) o texto não coube na altura — diminua as letras, tire algum campo ou aumente a altura da etiqueta.`;
+    }
+    $('#imp-layout-info').classList.toggle('alerta', naoCouberam > 0);
     const pular = Math.min(Math.max(0, Math.floor(Number(l.pular) || 0)), g.porFolha - 1);
     const posicoes = Array(pular).fill(null);
     for (const item of selecionados) for (let c = 0; c < estado.selecao.get(item.id); c++) posicoes.push(item);
@@ -419,7 +438,7 @@
         const html = pagina.map((item, idx) => {
           const classes = `${idx % g.cols === 0 ? ' col0' : ''}${idx < g.cols ? ' lin0' : ''}${item ? '' : ' vazia'}`;
           if (!item) return `<div class="etq${classes}"></div>`;
-          return htmlEtiqueta(item, { escalas: escalas.get(item.id), lateral: temLateral(item) ? htmlLateral(item) : '', classes });
+          return htmlEtiqueta(item, { escalas: escalas.get(item.id), classes });
         });
         return `<div class="${classeFolha}">${html.join('')}</div>`;
       })
@@ -428,15 +447,6 @@
     $('#imp-vazio').hidden = true;
     $('#imp-resumo').innerHTML = `${total} etiqueta${total > 1 ? 's' : ''} · ${paginas.length} folha${paginas.length > 1 ? 's' : ''}<small>${g.porFolha} por folha</small>`;
     $('#imp-imprimir').disabled = false;
-    atualizarAvisoUrl();
-  }
-
-  function atualizarAvisoUrl() {
-    const aviso = $('#imp-aviso-url');
-    const base = estado.config.urlBase || location.origin;
-    aviso.hidden = !(estado.layout.lateral === 'qr' && estado.selecao.size && ehEnderecoLocal(base));
-    aviso.innerHTML = `<strong>Atenção:</strong> os QR codes estão apontando para <code>${esc(base)}</code>, que só funciona neste computador — o celular não vai abrir.
-      Para testar com o celular, use o site publicado na Cloudflare.`;
   }
 
   // Formulário de layout
@@ -447,6 +457,7 @@
       if (!campo) continue;
       if (campo.type === 'checkbox') campo.checked = Boolean(valor);
       else campo.value = valor;
+      if (campo.type === 'range') campo.nextElementSibling.textContent = `${valor}%`;
     }
   }
   formLayout.addEventListener('input', (e) => {
@@ -454,7 +465,7 @@
     if (!campo.name) return;
     const l = estado.layout;
     if (campo.type === 'checkbox') l[campo.name] = campo.checked;
-    else if (campo.type === 'number') {
+    else if (campo.type === 'number' || campo.type === 'range') {
       if (campo.value === '' || !Number.isFinite(Number(campo.value))) return;
       l[campo.name] = Number(campo.value);
     } else l[campo.name] = campo.value;
@@ -469,6 +480,20 @@
     agendarFolhas();
   });
   formLayout.addEventListener('submit', (e) => e.preventDefault());
+  $('#imp-layout-padrao').addEventListener('click', () => {
+    estado.layout = { ...LAYOUT_PADRAO };
+    preencherLayout();
+    gravarLocal('etiquetas.layout', estado.layout);
+    agendarFolhas();
+  });
+  // Botões − / + ao lado das letras
+  formLayout.addEventListener('click', (e) => {
+    const botao = e.target.closest('[data-passo]');
+    if (!botao) return;
+    const faixa = botao.parentElement.querySelector('input[type="range"]');
+    faixa.value = Number(faixa.value) + Number(botao.dataset.passo);
+    faixa.dispatchEvent(new Event('input', { bubbles: true }));
+  });
   $('#imp-layout-botao').addEventListener('click', (e) => {
     formLayout.hidden = !formLayout.hidden;
     e.currentTarget.setAttribute('aria-expanded', String(!formLayout.hidden));
@@ -1067,14 +1092,6 @@
 
   function renderConfig() {
     const c = estado.config;
-    const campoUrl = $('#cfg-url');
-    if (document.activeElement !== campoUrl) campoUrl.value = c.urlBase;
-    const exemplo = estado.itens[0]?.codigo || '13020085-00';
-    const url = urlMaterial(c.urlBase, exemplo);
-    $('#cfg-teste').innerHTML = `<div class="qr">${qrSvg(url, { margem: 2 })}</div>
-      <div><div>QR code de teste — aponte a câmera do celular:</div><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a>
-      ${ehEnderecoLocal(url) ? '<p class="dica"><strong>Este endereço só funciona neste computador.</strong> Publique o site na Cloudflare para os celulares conseguirem abrir.</p>' : ''}</div>`;
-
     $('#cfg-google-status').innerHTML = c.buscaGoogle
       ? '<strong>Ativa.</strong> As fotos são buscadas no Google Imagens.'
       : '<strong>Sem chave do Google.</strong> Por enquanto as fotos vêm de bancos de fotos livres (Wikimedia Commons e Openverse), que têm menos peças. Para buscar no Google:';
@@ -1089,18 +1106,6 @@
     $('#cfg-pin-form button.primario').textContent = c.temPin ? 'Trocar PIN' : 'Definir PIN';
   }
 
-  $('#cfg-url-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      estado.config = await api('PUT', '/api/config', { urlBase: $('#cfg-url').value });
-      cacheQr.clear();
-      aviso('Endereço salvo. Os próximos QR codes já usam o novo endereço.', 'ok');
-      renderConfig();
-      agendarFolhas();
-    } catch (err) {
-      aviso(err.message, 'erro');
-    }
-  });
   $('#cfg-logo-arquivo').addEventListener('change', async (e) => {
     const arquivo = e.target.files[0];
     e.target.value = '';

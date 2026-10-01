@@ -268,44 +268,6 @@ const Comum = (() => {
     return foto ? `/fotos/${encodeURIComponent(foto.arquivo)}` : '';
   }
 
-  // ---- QR code ------------------------------------------------------------------
-
-  function urlMaterial(base, codigo) {
-    const raiz = (base || location.origin).replace(/\/+$/, '');
-    return `${raiz}/m/${encodeURIComponent(codigo)}`;
-  }
-
-  // Gera o QR code como SVG (fica nítido em qualquer tamanho de impressão).
-  function qrSvg(texto, { margem = 0, cor = '#000' } = {}) {
-    const qr = qrcode(0, 'M');
-    qr.addData(texto, 'Byte');
-    qr.make();
-    const n = qr.getModuleCount();
-    // Junta módulos escuros vizinhos na mesma linha para deixar o SVG menor.
-    let caminho = '';
-    for (let l = 0; l < n; l++) {
-      for (let c = 0; c < n; c++) {
-        if (!qr.isDark(l, c)) continue;
-        let fim = c;
-        while (fim + 1 < n && qr.isDark(l, fim + 1)) fim++;
-        const largura = fim - c + 1;
-        caminho += `M${c + margem} ${l + margem}h${largura}v1h-${largura}z`;
-        c = fim;
-      }
-    }
-    const tam = n + margem * 2;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${tam} ${tam}" shape-rendering="crispEdges"><rect width="${tam}" height="${tam}" fill="#fff"/><path d="${caminho}" fill="${cor}"/></svg>`;
-  }
-
-  function ehEnderecoLocal(url) {
-    try {
-      const host = new URL(url).hostname;
-      return host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
-    } catch {
-      return false;
-    }
-  }
-
   function aviso(mensagem, tipo = 'info') {
     let area = document.querySelector('.avisos');
     if (!area) {
@@ -322,7 +284,5 @@ const Comum = (() => {
     setTimeout(() => el.remove(), 4000);
   }
 
-  if (window.qrcode) qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
-
-  return { api, ErroApi, esc, lerLocal, gravarLocal, pedirPin, reduzirImagem, removerFundo, urlFoto, urlMaterial, qrSvg, ehEnderecoLocal, aviso };
+  return { api, ErroApi, esc, lerLocal, gravarLocal, pedirPin, reduzirImagem, removerFundo, urlFoto, aviso };
 })();
