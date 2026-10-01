@@ -17,5 +17,7 @@
       "database_id": "6bb7d865-1698-498d-b9b3-20b0aaf37cd1"
     }
   ],
+  // IA da Cloudflare (Workers AI): traduz a descrição para buscar fotos na internet.
+  "ai": { "binding": "AI" },
   "observability": { "enabled": true }
 }

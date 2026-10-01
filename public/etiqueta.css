@@ -96,12 +96,13 @@
   overflow: hidden;
 }
 
-.etq-qr {
+.etq-lateral {
   flex: 0 0 auto;
   height: 100%;
   aspect-ratio: 1;
 }
 .etq-qr svg { display: block; width: 100%; height: 100%; }
+.etq-foto img { display: block; width: 100%; height: 100%; object-fit: contain; }
 
 /* Área invisível usada para medir e ajustar o tamanho do texto. */
 .medidor {

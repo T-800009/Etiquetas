@@ -30,7 +30,9 @@ const ESQUEMA = [
     arquivo TEXT NOT NULL UNIQUE,
     tipo TEXT NOT NULL,
     dados BLOB NOT NULL,
-    atualizado_em TEXT NOT NULL
+    atualizado_em TEXT NOT NULL,
+    origem TEXT NOT NULL DEFAULT 'foto',
+    credito TEXT NOT NULL DEFAULT ''
   )`,
   'CREATE TABLE IF NOT EXISTS config (chave TEXT PRIMARY KEY, valor TEXT NOT NULL)',
   `CREATE TABLE IF NOT EXISTS arquivos (
@@ -44,7 +46,17 @@ const ESQUEMA = [
 // Cria as tabelas na primeira requisição: não é preciso rodar nenhum comando no banco.
 let esquemaPronto = null;
 function garantirEsquema(db) {
-  esquemaPronto ??= db.batch(ESQUEMA.map((sql) => db.prepare(sql))).catch((err) => {
+  esquemaPronto ??= (async () => {
+    await db.batch(ESQUEMA.map((sql) => db.prepare(sql)));
+    // Bancos criados antes da busca na internet não têm as colunas "origem" e "credito".
+    const { results } = await db.prepare('PRAGMA table_info(fotos)').all();
+    if (!results.some((c) => c.name === 'origem')) {
+      await db.prepare("ALTER TABLE fotos ADD COLUMN origem TEXT NOT NULL DEFAULT 'foto'").run();
+    }
+    if (!results.some((c) => c.name === 'credito')) {
+      await db.prepare("ALTER TABLE fotos ADD COLUMN credito TEXT NOT NULL DEFAULT ''").run();
+    }
+  })().catch((err) => {
     esquemaPronto = null;
     throw err;
   });
@@ -172,14 +184,164 @@ async function todosItens(db) {
   return results.map(linhaParaItem);
 }
 
+function linhaParaFoto(f) {
+  return { arquivo: f.arquivo, atualizadoEm: f.atualizado_em, origem: f.origem, credito: f.credito || '' };
+}
+
 async function mapaFotos(db) {
-  const { results } = await db.prepare('SELECT codigo, arquivo, atualizado_em FROM fotos').all();
-  return Object.fromEntries(results.map((f) => [f.codigo, { arquivo: f.arquivo, atualizadoEm: f.atualizado_em }]));
+  const { results } = await db.prepare('SELECT codigo, arquivo, atualizado_em, origem, credito FROM fotos').all();
+  return Object.fromEntries(results.map((f) => [f.codigo, linhaParaFoto(f)]));
 }
 
 async function fotoDoCodigo(db, codigo) {
-  const f = await db.prepare('SELECT codigo, arquivo, atualizado_em FROM fotos WHERE codigo_chave = ?').bind(codigo.toUpperCase()).first();
-  return f ? { codigo: f.codigo, foto: { arquivo: f.arquivo, atualizadoEm: f.atualizado_em } } : null;
+  const f = await db.prepare('SELECT codigo, arquivo, atualizado_em, origem, credito FROM fotos WHERE codigo_chave = ?').bind(codigo.toUpperCase()).first();
+  return f ? { codigo: f.codigo, foto: linhaParaFoto(f) } : null;
+}
+
+async function salvarFoto(db, codigo, bytes, tipo, origem, credito = '') {
+  const agora = new Date().toISOString();
+  const item = await db.prepare('SELECT codigo FROM itens WHERE upper(codigo) = ? LIMIT 1').bind(codigo.toUpperCase()).first();
+  const arquivo = await nomeArquivoFoto(codigo, tipo.ext);
+  await db
+    .prepare(
+      `INSERT INTO fotos (codigo_chave, codigo, arquivo, tipo, dados, atualizado_em, origem, credito) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(codigo_chave) DO UPDATE SET codigo = excluded.codigo, arquivo = excluded.arquivo, tipo = excluded.tipo,
+         dados = excluded.dados, atualizado_em = excluded.atualizado_em, origem = excluded.origem, credito = excluded.credito`,
+    )
+    .bind(codigo.toUpperCase(), item?.codigo || codigo, arquivo, tipo.tipo, bytes, agora, origem, credito)
+    .run();
+  return { arquivo, atualizadoEm: agora, origem, credito };
+}
+
+// ---------------------------------------------------------------------------
+// Busca de fotos na internet (Wikimedia Commons e Openverse: imagens livres,
+// sem precisar de chave de API)
+// ---------------------------------------------------------------------------
+
+const MODELO_TRADUCAO = '@cf/meta/m2m100-1.2b';
+const AGENTE = 'EtiquetasDeMaterial/1.0 (+https://github.com/T-800009/Etiquetas)';
+// Só baixamos imagens destes endereços (os mesmos que a busca devolve).
+const HOSTS_PERMITIDOS = ['upload.wikimedia.org', 'api.openverse.org'];
+
+// Nos testes, o acesso à internet é trocado por um serviço simulado.
+function acessoInternet(env) {
+  return env.INTERNET ? (url, init) => env.INTERNET.fetch(url, init) : (url, init) => fetch(url, init);
+}
+
+function semHtml(texto) {
+  return String(texto || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// As fotos livres na internet estão quase todas descritas em inglês.
+async function traduzir(env, texto) {
+  if (!env.AI) return texto;
+  try {
+    const t = await env.AI.run(MODELO_TRADUCAO, { text: texto, source_lang: 'portuguese', target_lang: 'english' });
+    return t?.translated_text || texto;
+  } catch (err) {
+    console.warn('Tradução falhou, buscando com o texto original:', err);
+    return texto;
+  }
+}
+
+// Termos menos específicos para tentar quando a busca exata não acha nada.
+function variacoesDaBusca(texto) {
+  const palavras = texto.replace(/[^\p{L}\p{N}\s.-]/gu, ' ').split(/\s+/).filter(Boolean);
+  const semMedidas = palavras.filter((p) => !/\d/.test(p));
+  return [...new Set([palavras.join(' '), semMedidas.join(' '), semMedidas.slice(0, 3).join(' '), semMedidas.slice(0, 2).join(' ')])].filter(Boolean);
+}
+
+async function buscarCommons(baixar, termo) {
+  const url = new URL('https://commons.wikimedia.org/w/api.php');
+  const params = {
+    action: 'query',
+    format: 'json',
+    generator: 'search',
+    gsrsearch: `${termo} filetype:bitmap`,
+    gsrnamespace: '6',
+    gsrlimit: '12',
+    prop: 'imageinfo',
+    iiprop: 'url|extmetadata|mime',
+    iiurlwidth: '800',
+  };
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  const resp = await baixar(url.toString(), { headers: { 'User-Agent': AGENTE } });
+  if (!resp.ok) throw new Error(`Commons respondeu ${resp.status}`);
+  const dados = await resp.json();
+  return Object.values(dados?.query?.pages || {})
+    .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+    .map((p) => {
+      const info = p.imageinfo?.[0];
+      if (!info?.thumburl || !/^image\/(jpeg|png|webp)$/.test(info.mime || '')) return null;
+      const meta = info.extmetadata || {};
+      const autor = semHtml(meta.Artist?.value);
+      const licenca = semHtml(meta.LicenseShortName?.value);
+      return {
+        url: info.thumburl,
+        titulo: semHtml(meta.ObjectName?.value) || p.title.replace(/^File:/, '').replace(/\.\w+$/, ''),
+        credito: [autor, 'Wikimedia Commons', licenca].filter(Boolean).join(' · '),
+        pagina: info.descriptionurl || '',
+      };
+    })
+    .filter(Boolean);
+}
+
+async function buscarOpenverse(baixar, termo) {
+  const url = new URL('https://api.openverse.org/v1/images/');
+  url.searchParams.set('q', termo);
+  url.searchParams.set('page_size', '12');
+  url.searchParams.set('mature', 'false');
+  const resp = await baixar(url.toString(), { headers: { 'User-Agent': AGENTE } });
+  if (!resp.ok) throw new Error(`Openverse respondeu ${resp.status}`);
+  const dados = await resp.json();
+  return (dados?.results || [])
+    .filter((r) => r.thumbnail)
+    .map((r) => ({
+      url: r.thumbnail,
+      titulo: semHtml(r.title),
+      credito: [semHtml(r.creator), r.source || 'Openverse', r.license ? `CC ${String(r.license).toUpperCase()} ${r.license_version || ''}`.trim() : ''].filter(Boolean).join(' · '),
+      pagina: r.foreign_landing_url || '',
+    }));
+}
+
+async function buscarImagens(env, descricao, limite = 12) {
+  const baixar = acessoInternet(env);
+  const termo = await traduzir(env, descricao);
+  const vistos = new Set();
+  const resultados = [];
+  const juntar = (lista) => {
+    for (const r of lista) {
+      if (vistos.has(r.url) || resultados.length >= limite) continue;
+      vistos.add(r.url);
+      resultados.push(r);
+    }
+  };
+  for (const variacao of variacoesDaBusca(termo)) {
+    const [commons, openverse] = await Promise.allSettled([buscarCommons(baixar, variacao), buscarOpenverse(baixar, variacao)]);
+    if (commons.status === 'fulfilled') juntar(commons.value);
+    else console.warn(commons.reason);
+    if (openverse.status === 'fulfilled') juntar(openverse.value);
+    else console.warn(openverse.reason);
+    if (resultados.length >= 6) break;
+  }
+  return { termo, resultados };
+}
+
+async function baixarImagem(env, endereco) {
+  let url;
+  try {
+    url = new URL(endereco);
+  } catch {
+    throw new ErroHttp(400, 'Endereço de imagem inválido.');
+  }
+  if (url.protocol !== 'https:' || !HOSTS_PERMITIDOS.includes(url.hostname)) throw new ErroHttp(400, 'Só é possível usar imagens encontradas pela busca do site.');
+  const resp = await acessoInternet(env)(url.toString(), { headers: { 'User-Agent': AGENTE } });
+  if (!resp.ok) throw new ErroHttp(502, 'Não foi possível baixar esta imagem. Escolha outra.');
+  const bytes = new Uint8Array(await resp.arrayBuffer());
+  if (bytes.length > LIMITE_IMAGEM) throw new ErroHttp(413, 'Imagem grande demais. Escolha outra.');
+  const tipo = tipoImagem(bytes);
+  if (!tipo) throw new ErroHttp(415, 'O endereço não é uma imagem JPG, PNG ou WEBP. Escolha outra.');
+  return { bytes, tipo };
 }
 
 async function lerConfig(db) {
@@ -240,7 +402,7 @@ async function exigirPin(request, db, config) {
   throw new ErroHttp(401, 'PIN de edição necessário.');
 }
 
-function configPublica(config) {
+function configPublica(config, env) {
   return {
     urlBase: config.urlBase || '',
     temPin: Boolean(config.pin),
@@ -351,33 +513,51 @@ async function rotaApi(request, env, url) {
     return json({ codigo: results[0]?.codigo || foto.codigo, foto: foto?.foto || null, itens: results.map(linhaParaItem) });
   }
 
-  if (recurso === 'fotos' && id && metodo === 'PUT') {
+  if (recurso === 'fotos' && id && !acao && metodo === 'PUT') {
     await exigirPin(request, db, config);
     const codigo = limparTexto(id);
     if (!codigo) throw new ErroHttp(400, 'Código inválido.');
     const corpo = await lerCorpo(request, LIMITE_IMAGEM);
     const tipo = tipoImagem(corpo);
     if (!tipo) throw new ErroHttp(415, 'Envie uma imagem JPG, PNG ou WEBP.');
-    const item = await db.prepare('SELECT codigo FROM itens WHERE upper(codigo) = ? LIMIT 1').bind(codigo.toUpperCase()).first();
-    const arquivo = await nomeArquivoFoto(codigo, tipo.ext);
-    await db
-      .prepare(
-        `INSERT INTO fotos (codigo_chave, codigo, arquivo, tipo, dados, atualizado_em) VALUES (?, ?, ?, ?, ?, ?)
-         ON CONFLICT(codigo_chave) DO UPDATE SET codigo = excluded.codigo, arquivo = excluded.arquivo, tipo = excluded.tipo,
-           dados = excluded.dados, atualizado_em = excluded.atualizado_em`,
-      )
-      .bind(codigo.toUpperCase(), item?.codigo || codigo, arquivo, tipo.tipo, corpo, agora)
-      .run();
-    return json({ arquivo, atualizadoEm: agora });
+    return json(await salvarFoto(db, codigo, corpo, tipo, 'foto'));
   }
 
-  if (recurso === 'fotos' && id && metodo === 'DELETE') {
+  // Busca fotos na internet pela descrição (só consulta, não salva nada).
+  if (recurso === 'imagens' && id === 'buscar' && metodo === 'GET') {
+    const descricao = limparTexto(url.searchParams.get('q'));
+    if (!descricao) throw new ErroHttp(400, 'Informe o que buscar.');
+    return json(await buscarImagens(env, descricao));
+  }
+
+  // Salva como foto do material uma imagem da internet. Sem "url", usa o primeiro
+  // resultado da busca pela descrição. Por padrão não substitui foto tirada no local.
+  if (recurso === 'fotos' && id && acao === 'internet' && metodo === 'POST') {
+    await exigirPin(request, db, config);
+    const codigo = limparTexto(id);
+    const corpo = await lerJson(request);
+    const atual = await fotoDoCodigo(db, codigo);
+    if (atual && atual.foto.origem !== 'internet' && !corpo.substituir) throw new ErroHttp(409, 'Este material já tem foto tirada no local.');
+    let escolhida = typeof corpo.url === 'string' ? { url: corpo.url, credito: limparTexto(corpo.credito) } : null;
+    if (!escolhida) {
+      const item = await db.prepare("SELECT descricao FROM itens WHERE upper(codigo) = ? AND descricao <> '' LIMIT 1").bind(codigo.toUpperCase()).first();
+      const descricao = limparTexto(corpo.descricao) || item?.descricao;
+      if (!descricao) throw new ErroHttp(400, 'Este material não tem descrição para buscar a foto.');
+      const { resultados } = await buscarImagens(env, descricao, 4);
+      if (!resultados.length) throw new ErroHttp(404, 'Nenhuma foto encontrada na internet para esta descrição.');
+      escolhida = resultados[0];
+    }
+    const imagem = await baixarImagem(env, escolhida.url);
+    return json(await salvarFoto(db, codigo, imagem.bytes, imagem.tipo, 'internet', escolhida.credito || ''));
+  }
+
+  if (recurso === 'fotos' && id && !acao && metodo === 'DELETE') {
     await exigirPin(request, db, config);
     await db.prepare('DELETE FROM fotos WHERE codigo_chave = ?').bind(id.toUpperCase()).run();
     return json({ ok: true });
   }
 
-  if (recurso === 'config' && !id && metodo === 'GET') return json(configPublica(config));
+  if (recurso === 'config' && !id && metodo === 'GET') return json(configPublica(config, env));
 
   if (recurso === 'config' && !id && metodo === 'PUT') {
     await exigirPin(request, db, config);
@@ -388,7 +568,7 @@ async function rotaApi(request, env, url) {
       config.urlBase = urlBase;
       await gravarConfig(db, 'urlBase', urlBase);
     }
-    return json(configPublica(config));
+    return json(configPublica(config, env));
   }
 
   if (recurso === 'config' && id === 'pin' && metodo === 'PUT') {
@@ -398,7 +578,7 @@ async function rotaApi(request, env, url) {
     if (novo && novo.length < 4) throw new ErroHttp(400, 'O PIN precisa ter pelo menos 4 caracteres.');
     config.pin = novo ? await hashPin(novo) : undefined;
     await gravarConfig(db, 'pin', config.pin);
-    return json(configPublica(config));
+    return json(configPublica(config, env));
   }
 
   if (recurso === 'pin' && id === 'verificar' && metodo === 'POST') {
@@ -417,7 +597,7 @@ async function rotaApi(request, env, url) {
     comandos.push(db.prepare("INSERT INTO config (chave, valor) VALUES ('logo', ?) ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor").bind(JSON.stringify(nome)));
     await db.batch(comandos);
     config.logo = nome;
-    return json(configPublica(config));
+    return json(configPublica(config, env));
   }
 
   if (recurso === 'logo' && !id && metodo === 'DELETE') {
@@ -426,7 +606,7 @@ async function rotaApi(request, env, url) {
       await db.batch([db.prepare('DELETE FROM arquivos WHERE nome = ?').bind(config.logo), db.prepare("DELETE FROM config WHERE chave = 'logo'")]);
       delete config.logo;
     }
-    return json(configPublica(config));
+    return json(configPublica(config, env));
   }
 
   if (recurso === 'backup' && !id && metodo === 'GET') {

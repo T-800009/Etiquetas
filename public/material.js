@@ -44,7 +44,7 @@
         <button class="botao ${foto ? '' : 'primario'}" id="m-tirar">${foto ? 'Tirar nova foto' : 'Tirar foto do material'}</button>
         <button class="botao" id="m-escolher">Escolher da galeria</button>
       </div>
-      ${dados.foto ? `<p class="m-rodape">Foto atualizada em ${new Date(dados.foto.atualizadoEm).toLocaleString('pt-BR')}</p>` : ''}`;
+      ${dados.foto ? `<p class="m-rodape">${dados.foto.credito ? `Foto: ${esc(dados.foto.credito)}` : `Foto atualizada em ${new Date(dados.foto.atualizadoEm).toLocaleString('pt-BR')}`}</p>` : ''}`;
 
     document.getElementById('m-tirar').addEventListener('click', () => document.getElementById('m-camera').click());
     document.getElementById('m-escolher').addEventListener('click', () => document.getElementById('m-galeria').click());

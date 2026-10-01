@@ -288,6 +288,38 @@ input[type="checkbox"] { accent-color: var(--vermelho); }
   text-align: center;
 }
 .botao.mais { display: flex; margin: 14px auto 0; }
+.miniatura { position: relative; }
+.selo-web {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: #1f6feb;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+}
+.credito-foto { font-size: 11px; color: var(--texto-2); background: rgba(255, 255, 255, 0.9); padding: 1px 6px; border-radius: 4px; }
+.dialogo-busca { width: min(900px, calc(100vw - 24px)); }
+.grade-busca { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; max-height: 55vh; overflow: auto; }
+.grade-busca:empty { display: none; }
+.resultado {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+.resultado:hover, .resultado:focus-visible { border-color: var(--vermelho); box-shadow: 0 0 0 2px var(--vermelho-claro); }
+.resultado img { width: 100%; aspect-ratio: 1; object-fit: contain; background: var(--fundo); border-radius: 4px; }
+.resultado span { font-size: 11px; color: var(--texto-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.foto-area.com-foto { align-items: flex-end; justify-content: flex-end; }
 
 /* ---------- Aba Configurações ---------- */
 .config { padding: 24px 20px; display: flex; flex-direction: column; align-items: center; gap: 16px; }

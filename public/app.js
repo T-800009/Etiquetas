@@ -21,7 +21,7 @@
     espaco: 0,
     copias: 1,
     pular: 0,
-    qr: true,
+    lateral: 'foto', // o que vai ao lado do texto: 'foto', 'qr' ou 'nada'
     corte: true,
     centralizar: true,
   };
@@ -33,12 +33,20 @@
     fotosPorCodigo: new Map(),
     config: { urlBase: '', temPin: false, logo: '/img/logo-padrao.svg' },
     selecao: new Map(), // id do item -> número de cópias
-    layout: { ...LAYOUT_PADRAO, ...lerLocal('etiquetas.layout', {}) },
+    layout: carregarLayout(),
     zoom: lerLocal('etiquetas.zoom', 60),
     limiteLista: POR_PAGINA,
     limiteTabela: POR_PAGINA,
     marcadosTabela: new Set(),
   };
+
+  function carregarLayout() {
+    const salvo = lerLocal('etiquetas.layout', {});
+    // Layouts salvos antes da opção de foto tinham só "qr: true/false".
+    if (!salvo.lateral && 'qr' in salvo) salvo.lateral = salvo.qr ? 'qr' : 'nada';
+    delete salvo.qr;
+    return { ...LAYOUT_PADRAO, ...salvo };
+  }
 
   // ---------------------------------------------------------------------------
   // Dados
@@ -283,7 +291,17 @@
     return cacheQr.get(url);
   }
 
-  function htmlEtiqueta(item, { escalas = {}, qr = '', classes = '' } = {}) {
+  // Foto do material ao lado do texto; sem foto cadastrada, usa o QR code no lugar.
+  function htmlLateral(item) {
+    const lateral = estado.layout.lateral;
+    if (lateral === 'foto') {
+      const foto = fotoDe(item.codigo);
+      if (foto) return `<div class="etq-lateral etq-foto"><img src="${esc(urlFoto(foto))}" alt=""></div>`;
+    }
+    return `<div class="etq-lateral etq-qr">${qrDe(item.codigo)}</div>`;
+  }
+
+  function htmlEtiqueta(item, { escalas = {}, lateral = '', classes = '' } = {}) {
     const s = (k) => (escalas[k] && escalas[k] < 1 ? ` style="--s:${escalas[k]}"` : '');
     return `<div class="etq${classes}">
       <div class="etq-info">
@@ -293,7 +311,7 @@
         ${item.bom ? `<div class="etq-bom"${s('bom')}>${esc(item.bom)}</div>` : ''}
         <div class="etq-rodape"><span class="etq-desc"${s('descricao')}>${esc(item.descricao)}</span><span class="etq-end"${s('endereco')}>${esc(item.endereco)}</span></div>
       </div>
-      ${estado.layout.qr ? `<div class="etq-qr">${qr}</div>` : ''}
+      ${estado.layout.lateral === 'nada' ? '' : lateral || '<div class="etq-lateral"></div>'}
     </div>`;
   }
 
@@ -308,7 +326,7 @@
   const cacheEscalas = new Map();
 
   function medirEscalas(itens, g) {
-    const chaveLayout = `${g.w}x${g.h}|${estado.layout.qr}|${estado.config.logo}`;
+    const chaveLayout = `${g.w}x${g.h}|${estado.layout.lateral === 'nada'}|${estado.config.logo}`;
     const chave = (i) => `${chaveLayout}|${i.codigo}|${i.referencia}|${i.bom}|${i.descricao}|${i.endereco}|${i.projeto}`;
     const faltando = itens.filter((i) => !cacheEscalas.has(chave(i)));
     if (faltando.length) {
@@ -399,7 +417,7 @@
         const html = pagina.map((item, idx) => {
           const classes = `${idx % g.cols === 0 ? ' col0' : ''}${idx < g.cols ? ' lin0' : ''}${item ? '' : ' vazia'}`;
           if (!item) return `<div class="etq${classes}"></div>`;
-          return htmlEtiqueta(item, { escalas: escalas.get(item.id), qr: l.qr ? qrDe(item.codigo) : '', classes });
+          return htmlEtiqueta(item, { escalas: escalas.get(item.id), lateral: l.lateral === 'nada' ? '' : htmlLateral(item), classes });
         });
         return `<div class="${classeFolha}">${html.join('')}</div>`;
       })
@@ -414,7 +432,7 @@
   function atualizarAvisoUrl() {
     const aviso = $('#imp-aviso-url');
     const base = estado.config.urlBase || location.origin;
-    aviso.hidden = !(estado.layout.qr && estado.selecao.size && ehEnderecoLocal(base));
+    aviso.hidden = !(estado.layout.lateral !== 'nada' && estado.selecao.size && ehEnderecoLocal(base));
     aviso.innerHTML = `<strong>Atenção:</strong> os QR codes estão apontando para <code>${esc(base)}</code>, que só funciona neste computador — o celular não vai abrir.
       Para testar com o celular, use o site publicado na Cloudflare.`;
   }
@@ -491,7 +509,7 @@
       .map((i) => {
         const foto = fotoDe(i.codigo);
         const miniatura = foto
-          ? `<button class="miniatura" data-acao="foto" style="background-image:url('${esc(urlFoto(foto))}')" title="Trocar foto" aria-label="Trocar foto de ${esc(i.codigo)}"></button>`
+          ? `<button class="miniatura" data-acao="foto" style="background-image:url('${esc(urlFoto(foto))}')" title="${foto.origem === 'internet' ? 'Foto da internet — clique para enviar uma foto tirada no local' : 'Trocar foto'}" aria-label="Trocar foto de ${esc(i.codigo)}">${foto.origem === 'internet' ? '<span class="selo-web">web</span>' : ''}</button>`
           : `<button class="miniatura sem" data-acao="foto" title="Adicionar foto">+ foto</button>`;
         return `<tr data-id="${esc(i.id)}">
           <td class="col-check"><input type="checkbox" class="mat-check" ${estado.marcadosTabela.has(i.id) ? 'checked' : ''} aria-label="Selecionar ${esc(i.codigo)}"></td>
@@ -511,12 +529,14 @@
     $('#mat-mais').textContent = `Mostrar mais (${lista.length - visiveis.length})`;
     $('#mat-check-todos').checked = visiveis.length > 0 && visiveis.every((i) => estado.marcadosTabela.has(i.id));
     $('#mat-excluir-sel').hidden = estado.marcadosTabela.size === 0;
+    atualizarBotaoWeb();
     $('#mat-excluir-sel').textContent = `Excluir selecionados (${estado.marcadosTabela.size})`;
 
     const codigos = new Set(estado.itens.map((i) => i.codigo.toUpperCase()));
     const semFoto = [...codigos].filter((c) => !estado.fotosPorCodigo.has(c)).length;
+    const daInternet = [...codigos].filter((c) => estado.fotosPorCodigo.get(c)?.origem === 'internet').length;
     $('#mat-estat').innerHTML = estado.itens.length
-      ? `<span><strong>${estado.itens.length}</strong> etiquetas cadastradas</span><span><strong>${codigos.size}</strong> códigos diferentes</span><span><strong>${codigos.size - semFoto}</strong> com foto · <strong>${semFoto}</strong> sem foto</span>${lista.length !== estado.itens.length ? `<span>${lista.length} no filtro</span>` : ''}`
+      ? `<span><strong>${estado.itens.length}</strong> etiquetas cadastradas</span><span><strong>${codigos.size}</strong> códigos diferentes</span><span><strong>${codigos.size - semFoto - daInternet}</strong> com foto do local · <strong>${daInternet}</strong> com foto da internet · <strong>${semFoto}</strong> sem foto</span>${lista.length !== estado.itens.length ? `<span>${lista.length} no filtro</span>` : ''}`
       : '';
   }
 
@@ -610,22 +630,160 @@
     return api('PUT', `/api/fotos/${encodeURIComponent(codigo)}`, blob);
   }
 
+  function fotoDaInternet(codigo, opcoes = {}) {
+    return api('POST', `/api/fotos/${encodeURIComponent(codigo)}/internet`, opcoes);
+  }
+
+  // ---- Fotos da internet em lote ------------------------------------------------
+
+  // Um código por material sem foto que tenha descrição.
+  function codigosSemFoto() {
+    const vistos = new Set();
+    const lista = [];
+    for (const i of estado.itens) {
+      const chave = i.codigo.toUpperCase();
+      if (vistos.has(chave) || !i.descricao || fotoDe(i.codigo)) continue;
+      vistos.add(chave);
+      lista.push(i.codigo);
+    }
+    return lista;
+  }
+
+  const lote = { rodando: false, parar: false, feitos: 0, total: 0 };
+  function atualizarBotaoWeb() {
+    const botao = $('#mat-buscar-web');
+    if (lote.rodando) {
+      botao.hidden = false;
+      botao.textContent = lote.parar ? 'Parando…' : `Buscando ${lote.feitos + 1} de ${lote.total}… (parar)`;
+      return;
+    }
+    const n = codigosSemFoto().length;
+    botao.hidden = n === 0;
+    botao.textContent = `Buscar fotos na internet (${n} sem foto)`;
+  }
+
+  $('#mat-buscar-web').addEventListener('click', async () => {
+    if (lote.rodando) {
+      lote.parar = true;
+      return atualizarBotaoWeb();
+    }
+    const codigos = codigosSemFoto();
+    if (
+      !confirm(
+        `Buscar na internet uma foto pela descrição para ${codigos.length} materia${codigos.length > 1 ? 'is' : 'l'} sem foto?\n\n` +
+          'O site usa a primeira foto encontrada. Ela é parecida com o material, mas pode não ser a peça exata: confira e troque quando precisar (no Editar há a opção de escolher entre várias).',
+      )
+    )
+      return;
+    Object.assign(lote, { rodando: true, parar: false, feitos: 0, total: codigos.length });
+    let naoAchou = 0;
+    let erros = 0;
+    try {
+      for (const codigo of codigos) {
+        if (lote.parar) break;
+        atualizarBotaoWeb();
+        try {
+          const foto = await fotoDaInternet(codigo);
+          estado.fotosPorCodigo.set(codigo.toUpperCase(), foto);
+        } catch (err) {
+          if (err.status === 401 || err.status === 429) throw err;
+          if (err.status === 404) naoAchou += 1;
+          else erros += 1;
+        }
+        lote.feitos += 1;
+        if (lote.feitos % 5 === 0) renderTabela();
+      }
+      const achou = lote.feitos - naoAchou - erros;
+      aviso(`${achou} foto(s) adicionada(s)${naoAchou ? `, ${naoAchou} sem resultado` : ''}${erros ? `, ${erros} com erro` : ''}.`, achou ? 'ok' : 'info');
+    } catch (err) {
+      aviso(err.message, 'erro');
+    } finally {
+      lote.rodando = false;
+      await carregar();
+    }
+  });
+
+  // ---- Escolher foto da internet -----------------------------------------------
+
+  const dlgBusca = $('#dlg-busca');
+  let resolverBusca = null;
+  let resultadosBusca = [];
+
+  async function buscarNaInternet() {
+    const termo = $('#busca-termo').value.trim();
+    if (!termo) return;
+    const grade = $('#busca-resultados');
+    $('#busca-status').textContent = 'Buscando…';
+    grade.innerHTML = '';
+    try {
+      const r = await api('GET', `/api/imagens/buscar?q=${encodeURIComponent(termo)}`);
+      resultadosBusca = r.resultados;
+      $('#busca-status').textContent = resultadosBusca.length
+        ? `Clique na foto que mais se parece com o material. (Buscado como: “${r.termo}”)`
+        : `Nada encontrado para “${r.termo}”. Tente palavras mais simples, por exemplo só o tipo da peça.`;
+      grade.innerHTML = resultadosBusca
+        .map(
+          (f, i) => `<button type="button" class="resultado" data-i="${i}" title="${esc(f.titulo)}">
+            <img src="${esc(f.url)}" alt="${esc(f.titulo)}" loading="lazy" referrerpolicy="no-referrer"><span>${esc(f.credito)}</span></button>`,
+        )
+        .join('');
+    } catch (err) {
+      $('#busca-status').textContent = err.message;
+    }
+  }
+
+  function escolherFotoInternet(termo) {
+    $('#busca-termo').value = termo;
+    dlgBusca.showModal();
+    buscarNaInternet();
+    return new Promise((resolve) => (resolverBusca = resolve));
+  }
+
+  $('#form-busca').addEventListener('submit', (e) => {
+    e.preventDefault();
+    buscarNaInternet();
+  });
+  $('#busca-resultados').addEventListener('click', (e) => {
+    const botao = e.target.closest('.resultado');
+    if (!botao) return;
+    const escolhida = resultadosBusca[Number(botao.dataset.i)];
+    resolverBusca?.(escolhida);
+    resolverBusca = null;
+    dlgBusca.close();
+  });
+  dlgBusca.addEventListener('close', () => {
+    resolverBusca?.(null);
+    resolverBusca = null;
+  });
+
   // ---- Diálogo de material ----------------------------------------------------
 
   const dlgMaterial = $('#dlg-material');
   const formMaterial = $('#form-material');
-  const material = { item: null, fotoNova: null, removerFoto: false, urlPrevia: '' };
+  const material = { item: null, fotoNova: null, removerFoto: false, urlPrevia: '', fotoWeb: null };
 
   function mostrarFotoDialogo() {
     const area = $('#dlg-foto-area');
     if (material.urlPrevia) URL.revokeObjectURL(material.urlPrevia);
     material.urlPrevia = '';
     let url = '';
+    let credito = '';
     if (material.fotoNova) url = material.urlPrevia = URL.createObjectURL(material.fotoNova);
-    else if (!material.removerFoto && material.item) url = urlFoto(fotoDe(material.item.codigo));
+    else if (material.fotoWeb) {
+      url = material.fotoWeb.url;
+      credito = material.fotoWeb.credito;
+    } else if (!material.removerFoto && material.item) {
+      const foto = fotoDe(material.item.codigo);
+      url = urlFoto(foto);
+      credito = foto?.credito || '';
+    }
     area.classList.toggle('com-foto', Boolean(url));
     area.style.backgroundImage = url ? `url("${url}")` : '';
-    area.textContent = url ? '' : 'Sem foto. Escolha uma imagem do computador ou tire uma foto pelo celular.';
+    area.innerHTML = url
+      ? credito
+        ? `<span class="credito-foto">${esc(credito)}</span>`
+        : ''
+      : 'Sem foto. Escolha uma imagem do computador, tire uma foto pelo celular ou busque na internet.';
     $('#dlg-foto-remover').hidden = !url;
   }
 
@@ -633,6 +791,7 @@
     material.item = item || null;
     material.fotoNova = null;
     material.removerFoto = false;
+    material.fotoWeb = null;
     formMaterial.reset();
     for (const campo of Importar.CAMPOS) formMaterial.elements[campo.id].value = item ? item[campo.id] : '';
     $('#dlg-material-titulo').textContent = item ? `Editar ${item.codigo}` : 'Novo material';
@@ -648,15 +807,27 @@
       if (!arquivo) return;
       material.fotoNova = arquivo;
       material.removerFoto = false;
+      material.fotoWeb = null;
       mostrarFotoDialogo();
     });
   }
   $('#dlg-foto-remover').addEventListener('click', () => {
     material.fotoNova = null;
+    material.fotoWeb = null;
     material.removerFoto = true;
     mostrarFotoDialogo();
   });
   $('#mat-novo').addEventListener('click', () => abrirMaterial(null));
+
+  $('#dlg-foto-web').addEventListener('click', async () => {
+    const termo = formMaterial.elements.descricao.value.trim() || formMaterial.elements.codigo.value.trim();
+    const escolhida = await escolherFotoInternet(termo);
+    if (!escolhida) return;
+    material.fotoWeb = escolhida;
+    material.fotoNova = null;
+    material.removerFoto = false;
+    mostrarFotoDialogo();
+  });
 
   formMaterial.addEventListener('submit', async (e) => {
     if (e.submitter?.value !== 'salvar') return;
@@ -667,6 +838,7 @@
     try {
       const salvo = material.item ? await api('PUT', `/api/itens/${material.item.id}`, dados) : await api('POST', '/api/itens', dados);
       if (material.fotoNova) await enviarFoto(salvo.codigo, material.fotoNova);
+      else if (material.fotoWeb) await fotoDaInternet(salvo.codigo, { url: material.fotoWeb.url, credito: material.fotoWeb.credito, substituir: true });
       else if (material.removerFoto) await api('DELETE', `/api/fotos/${encodeURIComponent(salvo.codigo)}`);
       dlgMaterial.close();
       aviso('Material salvo.', 'ok');

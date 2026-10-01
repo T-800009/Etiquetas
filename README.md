@@ -17,6 +17,9 @@ com a **foto daquele material**, a descrição, a referência, o BOM e onde ele 
 
 ## O que o site faz
 
+- **Foto na etiqueta**: ao lado do texto, a etiqueta mostra a **foto do material** (padrão). Material ainda
+  sem foto sai com o QR code no lugar. Em *Tamanho e layout → Ao lado do texto* dá para trocar para
+  "QR code" ou "Nada".
 - **Imprimir**: escolha os materiais (busca, filtro por projeto/linha, ordem por endereço), a quantidade
   de cópias de cada um e imprima em folha A4. Tamanho da etiqueta, margens, orientação e linhas de corte
   são configuráveis. Textos compridos diminuem para caber, em vez de serem cortados como no Excel.
@@ -76,6 +79,13 @@ são atualizados em vez de duplicados.
   **Tirar foto do material**.
 - **Pelo computador**: em **Materiais**, clique no quadrinho "+ foto" ao lado do material.
 
+- **Fotos da internet**: em **Materiais → Buscar fotos na internet** o site procura, para cada material sem
+  foto, uma foto pela descrição e usa a primeira encontrada. Ao editar um material, **Buscar na internet**
+  mostra várias opções para escolher. As fotos vêm do Wikimedia Commons e do Openverse (fotos livres, sem
+  precisar de chave); a descrição é traduzida para inglês pela IA da Cloudflare antes da busca. Essas fotos
+  ficam com o selo **web** na lista e são trocadas quando alguém tira a foto no local. O autor e a licença
+  aparecem em letra pequena no rodapé da página do QR code, como pedem as licenças dessas fotos.
+
 As fotos são reduzidas automaticamente (no máximo 1280 px) antes de enviar.
 
 ## Onde ficam os dados
@@ -86,8 +96,8 @@ dá para baixar o cadastro em JSON ou planilha.
 
 ## Para desenvolvedores
 
-- `npm install` e depois `npm run dev`: roda o site localmente (`http://localhost:8787`) com um banco D1 local.
-- `npm test`: sobe o Worker com `wrangler dev` e testa a API.
+- `npm install`, `npx wrangler login` e depois `npm run dev`: roda o site localmente (`http://localhost:8787`) com um banco D1 local (a tradução usa a IA da conta da Cloudflare, por isso o login).
+- `npm test`: sobe o Worker com `wrangler dev` (com IA e internet simuladas, `test/internet-falsa.js`) e testa a API.
 - `npm run deploy`: publica pela linha de comando (precisa de `npx wrangler login`).
 - O QR code é gerado no navegador com a biblioteca
   [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) (MIT), incluída em `public/vendor/`.
