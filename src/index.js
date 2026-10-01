@@ -30,7 +30,8 @@ const ESQUEMA = [
     arquivo TEXT NOT NULL UNIQUE,
     tipo TEXT NOT NULL,
     dados BLOB NOT NULL,
-    atualizado_em TEXT NOT NULL
+    atualizado_em TEXT NOT NULL,
+    origem TEXT NOT NULL DEFAULT 'foto'
   )`,
   'CREATE TABLE IF NOT EXISTS config (chave TEXT PRIMARY KEY, valor TEXT NOT NULL)',
   `CREATE TABLE IF NOT EXISTS arquivos (
@@ -44,7 +45,14 @@ const ESQUEMA = [
 // Cria as tabelas na primeira requisição: não é preciso rodar nenhum comando no banco.
 let esquemaPronto = null;
 function garantirEsquema(db) {
-  esquemaPronto ??= db.batch(ESQUEMA.map((sql) => db.prepare(sql))).catch((err) => {
+  esquemaPronto ??= (async () => {
+    await db.batch(ESQUEMA.map((sql) => db.prepare(sql)));
+    // Bancos criados antes da geração por IA não têm a coluna "origem" das fotos.
+    const { results } = await db.prepare('PRAGMA table_info(fotos)').all();
+    if (!results.some((c) => c.name === 'origem')) {
+      await db.prepare("ALTER TABLE fotos ADD COLUMN origem TEXT NOT NULL DEFAULT 'foto'").run();
+    }
+  })().catch((err) => {
     esquemaPronto = null;
     throw err;
   });
@@ -172,14 +180,60 @@ async function todosItens(db) {
   return results.map(linhaParaItem);
 }
 
+function linhaParaFoto(f) {
+  return { arquivo: f.arquivo, atualizadoEm: f.atualizado_em, ilustrativa: f.origem === 'ia' };
+}
+
 async function mapaFotos(db) {
-  const { results } = await db.prepare('SELECT codigo, arquivo, atualizado_em FROM fotos').all();
-  return Object.fromEntries(results.map((f) => [f.codigo, { arquivo: f.arquivo, atualizadoEm: f.atualizado_em }]));
+  const { results } = await db.prepare('SELECT codigo, arquivo, atualizado_em, origem FROM fotos').all();
+  return Object.fromEntries(results.map((f) => [f.codigo, linhaParaFoto(f)]));
 }
 
 async function fotoDoCodigo(db, codigo) {
-  const f = await db.prepare('SELECT codigo, arquivo, atualizado_em FROM fotos WHERE codigo_chave = ?').bind(codigo.toUpperCase()).first();
-  return f ? { codigo: f.codigo, foto: { arquivo: f.arquivo, atualizadoEm: f.atualizado_em } } : null;
+  const f = await db.prepare('SELECT codigo, arquivo, atualizado_em, origem FROM fotos WHERE codigo_chave = ?').bind(codigo.toUpperCase()).first();
+  return f ? { codigo: f.codigo, foto: linhaParaFoto(f) } : null;
+}
+
+async function salvarFoto(db, codigo, bytes, tipo, origem) {
+  const agora = new Date().toISOString();
+  const item = await db.prepare('SELECT codigo FROM itens WHERE upper(codigo) = ? LIMIT 1').bind(codigo.toUpperCase()).first();
+  const arquivo = await nomeArquivoFoto(codigo, tipo.ext);
+  await db
+    .prepare(
+      `INSERT INTO fotos (codigo_chave, codigo, arquivo, tipo, dados, atualizado_em, origem) VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(codigo_chave) DO UPDATE SET codigo = excluded.codigo, arquivo = excluded.arquivo, tipo = excluded.tipo,
+         dados = excluded.dados, atualizado_em = excluded.atualizado_em, origem = excluded.origem`,
+    )
+    .bind(codigo.toUpperCase(), item?.codigo || codigo, arquivo, tipo.tipo, bytes, agora, origem)
+    .run();
+  return { arquivo, atualizadoEm: agora, ilustrativa: origem === 'ia' };
+}
+
+// ---------------------------------------------------------------------------
+// Imagem ilustrativa gerada por IA (Workers AI da Cloudflare)
+// ---------------------------------------------------------------------------
+
+const MODELO_TRADUCAO = '@cf/meta/m2m100-1.2b';
+const MODELO_IMAGEM = '@cf/black-forest-labs/flux-1-schnell';
+
+async function gerarImagem(ai, descricao) {
+  // O gerador de imagens entende melhor inglês: traduz a descrição antes.
+  let ingles = descricao;
+  try {
+    const t = await ai.run(MODELO_TRADUCAO, { text: descricao, source_lang: 'portuguese', target_lang: 'english' });
+    if (t?.translated_text) ingles = t.translated_text;
+  } catch (err) {
+    console.warn('Tradução falhou, usando a descrição original:', err);
+  }
+  const prompt =
+    `Professional product photo of a single automotive industrial part: ${ingles}. ` +
+    'Isolated on a plain white background, soft studio lighting, sharp focus, realistic, no text, no logo.';
+  const r = await ai.run(MODELO_IMAGEM, { prompt, steps: 6 });
+  if (!r?.image) throw new Error('A IA não devolveu imagem.');
+  const binario = atob(r.image);
+  const bytes = new Uint8Array(binario.length);
+  for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
+  return { bytes, prompt };
 }
 
 async function lerConfig(db) {
@@ -240,10 +294,11 @@ async function exigirPin(request, db, config) {
   throw new ErroHttp(401, 'PIN de edição necessário.');
 }
 
-function configPublica(config) {
+function configPublica(config, env) {
   return {
     urlBase: config.urlBase || '',
     temPin: Boolean(config.pin),
+    temIa: Boolean(env.AI),
     logo: config.logo ? `/logo?v=${encodeURIComponent(config.logo)}` : '/img/logo-padrao.svg',
     logoPersonalizado: Boolean(config.logo),
   };
@@ -351,33 +406,47 @@ async function rotaApi(request, env, url) {
     return json({ codigo: results[0]?.codigo || foto.codigo, foto: foto?.foto || null, itens: results.map(linhaParaItem) });
   }
 
-  if (recurso === 'fotos' && id && metodo === 'PUT') {
+  if (recurso === 'fotos' && id && !acao && metodo === 'PUT') {
     await exigirPin(request, db, config);
     const codigo = limparTexto(id);
     if (!codigo) throw new ErroHttp(400, 'Código inválido.');
     const corpo = await lerCorpo(request, LIMITE_IMAGEM);
     const tipo = tipoImagem(corpo);
     if (!tipo) throw new ErroHttp(415, 'Envie uma imagem JPG, PNG ou WEBP.');
-    const item = await db.prepare('SELECT codigo FROM itens WHERE upper(codigo) = ? LIMIT 1').bind(codigo.toUpperCase()).first();
-    const arquivo = await nomeArquivoFoto(codigo, tipo.ext);
-    await db
-      .prepare(
-        `INSERT INTO fotos (codigo_chave, codigo, arquivo, tipo, dados, atualizado_em) VALUES (?, ?, ?, ?, ?, ?)
-         ON CONFLICT(codigo_chave) DO UPDATE SET codigo = excluded.codigo, arquivo = excluded.arquivo, tipo = excluded.tipo,
-           dados = excluded.dados, atualizado_em = excluded.atualizado_em`,
-      )
-      .bind(codigo.toUpperCase(), item?.codigo || codigo, arquivo, tipo.tipo, corpo, agora)
-      .run();
-    return json({ arquivo, atualizadoEm: agora });
+    return json(await salvarFoto(db, codigo, corpo, tipo, 'foto'));
   }
 
-  if (recurso === 'fotos' && id && metodo === 'DELETE') {
+  // Gera uma imagem ilustrativa a partir da descrição. Por padrão não substitui foto real.
+  if (recurso === 'fotos' && id && acao === 'gerar' && metodo === 'POST') {
+    await exigirPin(request, db, config);
+    if (!env.AI) throw new ErroHttp(503, 'A IA da Cloudflare não está configurada neste site.');
+    const codigo = limparTexto(id);
+    const corpo = await lerJson(request);
+    const atual = await fotoDoCodigo(db, codigo);
+    if (atual && !atual.foto.ilustrativa && !corpo.substituir) throw new ErroHttp(409, 'Este material já tem foto real.');
+    const item = await db.prepare("SELECT descricao FROM itens WHERE upper(codigo) = ? AND descricao <> '' LIMIT 1").bind(codigo.toUpperCase()).first();
+    const descricao = limparTexto(corpo.descricao) || item?.descricao;
+    if (!descricao) throw new ErroHttp(400, 'Este material não tem descrição para gerar a imagem.');
+    let imagem;
+    try {
+      imagem = await gerarImagem(env.AI, descricao);
+    } catch (err) {
+      console.error(err);
+      const limite = /limit|quota|neuron|429|capacity/i.test(String(err?.message));
+      throw new ErroHttp(limite ? 429 : 502, limite ? 'O limite diário da IA da Cloudflare acabou. Tente de novo amanhã.' : 'Não foi possível gerar a imagem agora. Tente de novo.');
+    }
+    const tipo = tipoImagem(imagem.bytes);
+    if (!tipo) throw new ErroHttp(502, 'A IA devolveu um arquivo que não é imagem.');
+    return json(await salvarFoto(db, codigo, imagem.bytes, tipo, 'ia'));
+  }
+
+  if (recurso === 'fotos' && id && !acao && metodo === 'DELETE') {
     await exigirPin(request, db, config);
     await db.prepare('DELETE FROM fotos WHERE codigo_chave = ?').bind(id.toUpperCase()).run();
     return json({ ok: true });
   }
 
-  if (recurso === 'config' && !id && metodo === 'GET') return json(configPublica(config));
+  if (recurso === 'config' && !id && metodo === 'GET') return json(configPublica(config, env));
 
   if (recurso === 'config' && !id && metodo === 'PUT') {
     await exigirPin(request, db, config);
@@ -388,7 +457,7 @@ async function rotaApi(request, env, url) {
       config.urlBase = urlBase;
       await gravarConfig(db, 'urlBase', urlBase);
     }
-    return json(configPublica(config));
+    return json(configPublica(config, env));
   }
 
   if (recurso === 'config' && id === 'pin' && metodo === 'PUT') {
@@ -398,7 +467,7 @@ async function rotaApi(request, env, url) {
     if (novo && novo.length < 4) throw new ErroHttp(400, 'O PIN precisa ter pelo menos 4 caracteres.');
     config.pin = novo ? await hashPin(novo) : undefined;
     await gravarConfig(db, 'pin', config.pin);
-    return json(configPublica(config));
+    return json(configPublica(config, env));
   }
 
   if (recurso === 'pin' && id === 'verificar' && metodo === 'POST') {
@@ -417,7 +486,7 @@ async function rotaApi(request, env, url) {
     comandos.push(db.prepare("INSERT INTO config (chave, valor) VALUES ('logo', ?) ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor").bind(JSON.stringify(nome)));
     await db.batch(comandos);
     config.logo = nome;
-    return json(configPublica(config));
+    return json(configPublica(config, env));
   }
 
   if (recurso === 'logo' && !id && metodo === 'DELETE') {
@@ -426,7 +495,7 @@ async function rotaApi(request, env, url) {
       await db.batch([db.prepare('DELETE FROM arquivos WHERE nome = ?').bind(config.logo), db.prepare("DELETE FROM config WHERE chave = 'logo'")]);
       delete config.logo;
     }
-    return json(configPublica(config));
+    return json(configPublica(config, env));
   }
 
   if (recurso === 'backup' && !id && metodo === 'GET') {

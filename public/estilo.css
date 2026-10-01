@@ -288,6 +288,21 @@ input[type="checkbox"] { accent-color: var(--vermelho); }
   text-align: center;
 }
 .botao.mais { display: flex; margin: 14px auto 0; }
+.miniatura { position: relative; }
+.selo-ia {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: #5b3fd1;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+}
+.selo-ia.grande { position: static; align-self: flex-end; font-size: 12px; padding: 2px 8px; line-height: 18px; }
+.foto-area.com-foto { align-items: flex-end; justify-content: flex-end; }
 
 /* ---------- Aba Configurações ---------- */
 .config { padding: 24px 20px; display: flex; flex-direction: column; align-items: center; gap: 16px; }

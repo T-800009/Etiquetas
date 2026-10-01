@@ -30,12 +30,30 @@ async function chamar(metodo, rota, { json, corpo, tipo, pin } = {}) {
   return { status: resp.status, dados, headers: resp.headers };
 }
 
+// Cria configurações de teste: a mesma do site, mas com a IA trocada por test/ia-falsa.js.
+async function configuracoesDeTeste() {
+  const raiz = path.join(__dirname, '..');
+  const texto = await fs.readFile(path.join(raiz, 'wrangler.jsonc'), 'utf8');
+  const config = JSON.parse(texto.replace(/^\s*\/\/.*$/gm, ''));
+  delete config.ai;
+  delete config.$schema;
+  config.main = path.join(raiz, config.main);
+  config.assets.directory = path.join(raiz, config.assets.directory);
+  config.services = [{ binding: 'AI', service: 'ia-falsa', entrypoint: 'IaFalsa' }];
+  const principal = path.join(dadosDir, 'wrangler.json');
+  const ia = path.join(dadosDir, 'ia-falsa.json');
+  await fs.writeFile(principal, JSON.stringify(config));
+  await fs.writeFile(ia, JSON.stringify({ name: 'ia-falsa', main: path.join(__dirname, 'ia-falsa.js'), compatibility_date: config.compatibility_date }));
+  return ['-c', principal, '-c', ia];
+}
+
 // Sobe o Worker localmente (wrangler dev) com um banco D1 temporário.
-function iniciarWorker() {
+async function iniciarWorker() {
   const porta = 8800 + Math.floor(Math.random() * 1000);
+  const configs = await configuracoesDeTeste();
   processo = spawn(
     process.execPath,
-    [path.join(__dirname, '..', 'node_modules', 'wrangler', 'bin', 'wrangler.js'), 'dev', '--port', String(porta), '--ip', '127.0.0.1', '--persist-to', dadosDir, '--show-interactive-dev-session=false'],
+    [path.join(__dirname, '..', 'node_modules', 'wrangler', 'bin', 'wrangler.js'), 'dev', ...configs, '--port', String(porta), '--ip', '127.0.0.1', '--persist-to', path.join(dadosDir, 'd1'), '--show-interactive-dev-session=false'],
     { cwd: path.join(__dirname, '..'), env: { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false' }, stdio: ['ignore', 'pipe', 'pipe'] },
   );
   base = `http://127.0.0.1:${porta}`;
@@ -183,4 +201,28 @@ test('telas e página do QR code são servidas', async () => {
   const logo = await fetch(`${base}/logo`);
   assert.equal(logo.status, 200);
   assert.match(logo.headers.get('content-type'), /svg/);
+});
+
+test('gera imagem ilustrativa pela descrição sem apagar foto real', async () => {
+  await chamar('POST', '/api/itens', { json: { codigo: 'IA-1', descricao: 'Arruela lisa M6' } });
+  const gerada = await chamar('POST', '/api/fotos/IA-1/gerar', { json: {} });
+  assert.equal(gerada.status, 200, JSON.stringify(gerada.dados));
+  assert.equal(gerada.dados.ilustrativa, true);
+  const material = await chamar('GET', '/api/material/IA-1');
+  assert.equal(material.dados.foto.ilustrativa, true);
+  assert.equal((await fetch(`${base}/fotos/${gerada.dados.arquivo}`)).headers.get('content-type'), 'image/jpeg');
+
+  // Foto real substitui a ilustrativa e passa a ser protegida.
+  const real = await chamar('PUT', '/api/fotos/IA-1', { corpo: JPEG, tipo: 'image/jpeg' });
+  assert.equal(real.dados.ilustrativa, false);
+  assert.equal((await chamar('POST', '/api/fotos/IA-1/gerar', { json: {} })).status, 409);
+  assert.equal((await chamar('POST', '/api/fotos/IA-1/gerar', { json: { substituir: true } })).status, 200);
+
+  await chamar('POST', '/api/itens', { json: { codigo: 'IA-2' } });
+  assert.equal((await chamar('POST', '/api/fotos/IA-2/gerar', { json: {} })).status, 400, 'sem descrição');
+
+  await chamar('POST', '/api/itens', { json: { codigo: 'IA-3', descricao: 'ESGOTADO' } });
+  const esgotado = await chamar('POST', '/api/fotos/IA-3/gerar', { json: {} });
+  assert.equal(esgotado.status, 429);
+  assert.match(esgotado.dados.erro, /limite diário/);
 });
