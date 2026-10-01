@@ -1,0 +1,21 @@
+{
+  // Configuração do site na Cloudflare (Worker + banco D1 "etiquetas").
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "etiquetas",
+  "main": "src/index.js",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    // Estas rotas passam pelo Worker; o resto (telas, CSS, JS) vem direto da pasta public.
+    "run_worker_first": ["/api/*", "/m/*", "/fotos/*", "/logo"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "etiquetas",
+      "database_id": "6bb7d865-1698-498d-b9b3-20b0aaf37cd1"
+    }
+  ],
+  "observability": { "enabled": true }
+}

@@ -1,0 +1,7 @@
+# Dependências e arquivos locais do wrangler (banco D1 de desenvolvimento)
+node_modules/
+.wrangler/
+.dev.vars
+*.log
+.DS_Store
+Thumbs.db

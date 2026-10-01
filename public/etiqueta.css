@@ -1,0 +1,152 @@
+/* Etiqueta e folha de impressão. Todas as medidas vêm em mm via variáveis CSS
+   definidas pelo app.js (--pw/--ph = papel, --w/--h = etiqueta). */
+
+.folha {
+  position: relative;
+  box-sizing: border-box;
+  width: var(--pw);
+  height: var(--ph);
+  padding: var(--mt) 0 0 var(--ml);
+  background: #fff;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--w));
+  grid-auto-rows: var(--h);
+  gap: var(--gap);
+  align-content: start;
+  overflow: hidden;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.etq {
+  --f: min(var(--h), calc(var(--w) * 0.4));
+  box-sizing: border-box;
+  width: var(--w);
+  height: var(--h);
+  padding: calc(var(--f) * 0.05) calc(var(--f) * 0.06);
+  display: flex;
+  gap: calc(var(--f) * 0.05);
+  overflow: hidden;
+  color: #000;
+  background: #fff;
+  font-family: Calibri, Carlito, "Segoe UI", Arial, sans-serif;
+  line-height: 1.12;
+}
+.etq.vazia { visibility: hidden; }
+
+/* Linhas de corte tracejadas, como na planilha antiga. */
+.corte .etq { border-right: 0.25mm dashed #666; border-bottom: 0.25mm dashed #666; }
+.corte .etq.col0 { border-left: 0.25mm dashed #666; }
+.corte .etq.lin0 { border-top: 0.25mm dashed #666; }
+.corte.separadas .etq { border: 0.25mm dashed #666; }
+
+.etq-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.etq-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1mm;
+  height: calc(var(--f) * 0.17);
+  flex: 0 0 auto;
+}
+/* Largura fixa: o espaço do logo não depende de a imagem já ter carregado. */
+.etq-logo { flex: 0 0 auto; height: 100%; width: calc(var(--f) * 0.36); object-fit: contain; object-position: left center; }
+.etq-projeto { min-width: 0; font-size: calc(var(--f) * 0.09 * var(--s, 1)); white-space: nowrap; overflow: hidden; }
+
+.etq-codigo,
+.etq-ref,
+.etq-bom {
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.etq-codigo { font-weight: 700; font-size: calc(var(--f) * 0.14 * var(--s, 1)); line-height: 1.05; }
+.etq-ref,
+.etq-bom { font-size: calc(var(--f) * 0.092 * var(--s, 1)); }
+
+.etq-rodape {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(var(--f) * 0.05);
+  min-height: 0;
+}
+.etq-desc {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: calc(var(--f) * 0.085 * var(--s, 1));
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.etq-end {
+  flex: 0 0 auto;
+  max-width: 60%;
+  font-weight: 700;
+  font-size: calc(var(--f) * 0.115 * var(--s, 1));
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.etq-qr {
+  flex: 0 0 auto;
+  height: 100%;
+  aspect-ratio: 1;
+}
+.etq-qr svg { display: block; width: 100%; height: 100%; }
+
+/* Área invisível usada para medir e ajustar o tamanho do texto. */
+.medidor {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media print {
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    min-height: 0 !important;
+    height: auto !important;
+    display: block !important;
+  }
+  .nao-imprimir,
+  .painel-aba[hidden],
+  .avisos,
+  dialog { display: none !important; }
+  .imprimir,
+  .previa,
+  .folhas-rolagem,
+  .folhas {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: none !important;
+    zoom: 1 !important;
+    transform: none !important;
+  }
+  .folha {
+    box-shadow: none !important;
+    margin: 0 !important;
+    /* um pouco menor que a página para nunca gerar folha em branco */
+    height: calc(var(--ph) - 0.6mm);
+    break-after: page;
+    page-break-after: always;
+  }
+  .folha:last-child { break-after: auto; page-break-after: auto; }
+}

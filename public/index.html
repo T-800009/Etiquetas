@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Etiquetas de Material</title>
+  <link rel="icon" href="/img/icone.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/estilo.css">
+  <link rel="stylesheet" href="/etiqueta.css">
+  <style id="estilo-pagina"></style>
+</head>
+<body>
+  <header class="topo nao-imprimir">
+    <div class="marca">
+      <img class="marca-logo" src="/img/logo-padrao.svg" alt="">
+      <span class="marca-nome">Etiquetas de Material</span>
+    </div>
+    <nav class="abas" role="tablist">
+      <button class="aba ativa" role="tab" data-aba="imprimir" aria-selected="true">Imprimir</button>
+      <button class="aba" role="tab" data-aba="materiais" aria-selected="false">Materiais</button>
+      <button class="aba" role="tab" data-aba="config" aria-selected="false">Configurações</button>
+    </nav>
+  </header>
+
+  <!-- ===================== IMPRIMIR ===================== -->
+  <main id="aba-imprimir" class="painel-aba imprimir">
+    <aside class="lista-imprimir nao-imprimir">
+      <div class="filtros">
+        <input id="imp-busca" type="search" placeholder="Buscar código, descrição, endereço…" autocomplete="off">
+        <div class="filtros-linha">
+          <select id="imp-projeto" aria-label="Projeto / linha"><option value="">Todos os projetos</option></select>
+          <select id="imp-ordem" aria-label="Ordenar por">
+            <option value="endereco">Por endereço</option>
+            <option value="codigo">Por código</option>
+            <option value="descricao">Por descrição</option>
+            <option value="cadastro">Por cadastro</option>
+          </select>
+        </div>
+      </div>
+      <div class="lista-acoes">
+        <button class="botao pequeno" id="imp-todos">Selecionar todos</button>
+        <button class="botao pequeno" id="imp-limpar">Limpar seleção</button>
+        <span class="contador" id="imp-contador"></span>
+      </div>
+      <ul class="lista-selecao" id="imp-lista"></ul>
+    </aside>
+
+    <section class="previa">
+      <div class="barra-previa nao-imprimir">
+        <div class="resumo" id="imp-resumo">Nenhuma etiqueta selecionada</div>
+        <div class="barra-direita">
+          <label class="zoom">Zoom <input id="imp-zoom" type="range" min="30" max="120" step="5" value="60"></label>
+          <button class="botao" id="imp-layout-botao" aria-expanded="false" aria-controls="imp-layout">Tamanho e layout</button>
+          <button class="botao primario" id="imp-imprimir" disabled>Imprimir</button>
+        </div>
+      </div>
+
+      <form class="layout nao-imprimir" id="imp-layout" hidden>
+        <div class="layout-grade">
+          <label>Modelo
+            <select name="modelo">
+              <option value="padrao">Padrão — 90 × 32 mm</option>
+              <option value="pequena">Pequena — 70 × 25 mm</option>
+              <option value="grande">Grande — 100 × 50 mm</option>
+              <option value="personalizado">Personalizado</option>
+            </select>
+          </label>
+          <label>Papel
+            <select name="papel">
+              <option value="A4">A4 (210 × 297 mm)</option>
+              <option value="Carta">Carta (216 × 279 mm)</option>
+            </select>
+          </label>
+          <label>Orientação
+            <select name="orientacao">
+              <option value="paisagem">Paisagem (deitada)</option>
+              <option value="retrato">Retrato (em pé)</option>
+            </select>
+          </label>
+          <label>Largura da etiqueta (mm) <input name="largura" type="number" min="30" max="200" step="0.5"></label>
+          <label>Altura da etiqueta (mm) <input name="altura" type="number" min="15" max="150" step="0.5"></label>
+          <label>Margem da folha (mm) <input name="margem" type="number" min="0" max="40" step="0.5"></label>
+          <label>Espaço entre etiquetas (mm) <input name="espaco" type="number" min="0" max="20" step="0.5"></label>
+          <label>Cópias ao selecionar <input name="copias" type="number" min="1" max="99" step="1"></label>
+          <label>Pular posições na 1ª folha <input name="pular" type="number" min="0" max="200" step="1"></label>
+        </div>
+        <div class="layout-opcoes">
+          <label class="check"><input type="checkbox" name="qr"> Mostrar QR code</label>
+          <label class="check"><input type="checkbox" name="corte"> Linhas de corte tracejadas</label>
+          <label class="check"><input type="checkbox" name="centralizar"> Centralizar na folha</label>
+        </div>
+        <p class="dica" id="imp-layout-info"></p>
+      </form>
+
+      <div class="aviso-qr nao-imprimir" id="imp-aviso-url" hidden></div>
+
+      <div class="folhas-rolagem">
+        <div class="folhas" id="imp-folhas"></div>
+        <div class="vazio nao-imprimir" id="imp-vazio">
+          <p><strong>Selecione os materiais</strong> na lista ao lado para montar as etiquetas.</p>
+          <p class="dica">Ainda não tem materiais? Cadastre ou importe da planilha na aba <a href="#materiais" data-ir="materiais">Materiais</a>.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== MATERIAIS ===================== -->
+  <main id="aba-materiais" class="painel-aba materiais nao-imprimir" hidden>
+    <div class="barra-materiais">
+      <input id="mat-busca" type="search" placeholder="Buscar código, descrição, endereço…" autocomplete="off">
+      <label class="check"><input type="checkbox" id="mat-sem-foto"> Somente sem foto</label>
+      <div class="barra-direita">
+        <button class="botao" id="mat-excluir-sel" hidden>Excluir selecionados</button>
+        <button class="botao" id="mat-exportar">Exportar para Excel</button>
+        <button class="botao" id="mat-importar">Importar planilha</button>
+        <button class="botao primario" id="mat-novo">+ Novo material</button>
+      </div>
+    </div>
+    <div class="estatisticas" id="mat-estat"></div>
+    <div class="tabela-rolagem">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" id="mat-check-todos" aria-label="Selecionar todos"></th>
+            <th class="col-foto">Foto</th>
+            <th>Código</th>
+            <th>Descrição</th>
+            <th>Referência</th>
+            <th>BOM</th>
+            <th>Endereço</th>
+            <th>Projeto</th>
+            <th class="col-acoes"></th>
+          </tr>
+        </thead>
+        <tbody id="mat-corpo"></tbody>
+      </table>
+      <div class="vazio" id="mat-vazio" hidden>
+        <p><strong>Nenhum material cadastrado ainda.</strong></p>
+        <p class="dica">Use <em>Importar planilha</em> para trazer os dados da planilha de etiquetas, ou <em>+ Novo material</em> para cadastrar um por um.</p>
+      </div>
+      <button class="botao mais" id="mat-mais" hidden>Mostrar mais</button>
+    </div>
+  </main>
+
+  <!-- ===================== CONFIGURAÇÕES ===================== -->
+  <main id="aba-config" class="painel-aba config nao-imprimir" hidden>
+    <section class="cartao">
+      <h2>Endereço usado no QR code</h2>
+      <p>Quando alguém aponta a câmera do celular para a etiqueta, o QR code abre este endereço com a foto do material.
+        Deixe em branco para usar o endereço do próprio site. Preencha só se o site tiver um domínio próprio (ex.: <code>https://etiquetas.suaempresa.com.br</code>).</p>
+      <form id="cfg-url-form" class="linha-form">
+        <input id="cfg-url" type="url" placeholder="Em branco = endereço deste site" autocomplete="off">
+        <button class="botao primario">Salvar</button>
+      </form>
+      <div class="teste-qr" id="cfg-teste"></div>
+    </section>
+
+    <section class="cartao">
+      <h2>Logo da etiqueta</h2>
+      <p>Logo impresso no canto da etiqueta. Envie o arquivo oficial em PNG ou JPG (de preferência com fundo branco ou transparente).</p>
+      <div class="logo-config">
+        <div class="logo-previa"><img id="cfg-logo-img" src="/img/logo-padrao.svg" alt="Logo atual"></div>
+        <div class="botoes">
+          <label class="botao">Enviar logo <input id="cfg-logo-arquivo" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
+          <button class="botao" id="cfg-logo-padrao">Voltar ao padrão</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="cartao">
+      <h2>PIN de edição</h2>
+      <p id="cfg-pin-status"></p>
+      <form id="cfg-pin-form" class="linha-form">
+        <input id="cfg-pin-novo" type="password" inputmode="numeric" placeholder="Novo PIN (mín. 4 dígitos)" autocomplete="new-password">
+        <button class="botao primario">Definir PIN</button>
+        <button class="botao" type="button" id="cfg-pin-remover" hidden>Remover PIN</button>
+      </form>
+    </section>
+
+    <section class="cartao">
+      <h2>Cópia de segurança</h2>
+      <p>O cadastro e as fotos ficam no banco de dados D1 da Cloudflare, que guarda o histórico dos últimos dias
+        (dá para voltar no tempo pelo painel da Cloudflare, em <em>D1 → etiquetas → Time Travel</em>). Também é bom baixar uma cópia do cadastro de vez em quando:</p>
+      <div class="botoes">
+        <a class="botao" href="/api/backup" download>Baixar cadastro (JSON)</a>
+        <button class="botao" id="cfg-exportar">Baixar planilha (CSV)</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== DIÁLOGOS ===================== -->
+  <dialog class="dialogo dialogo-material" id="dlg-material">
+    <form method="dialog" id="form-material">
+      <h2 id="dlg-material-titulo">Novo material</h2>
+      <div class="material-grade">
+        <div class="campos">
+          <label>Código do material <input name="codigo" required placeholder="13020085-00" autocomplete="off"></label>
+          <label>Descrição <input name="descricao" placeholder="Porca hexagonal de metal com trava" autocomplete="off"></label>
+          <label>Referência / especificação <input name="referencia" placeholder="BYDQ33424T15F61KP1.5" autocomplete="off"></label>
+          <label>BOM <input name="bom" placeholder="BOM-1339 e BOM-1268" autocomplete="off"></label>
+          <div class="duas">
+            <label>Endereço / posição <input name="endereco" placeholder="01.A.C2" autocomplete="off"></label>
+            <label>Projeto / linha <input name="projeto" placeholder="BC22LE" autocomplete="off"></label>
+          </div>
+        </div>
+        <div class="foto-box">
+          <div class="foto-area" id="dlg-foto-area"></div>
+          <div class="botoes">
+            <label class="botao">Escolher foto <input type="file" accept="image/*" id="dlg-foto-arquivo" hidden></label>
+            <label class="botao so-celular">Tirar foto <input type="file" accept="image/*" capture="environment" id="dlg-foto-camera" hidden></label>
+            <button type="button" class="botao" id="dlg-foto-remover" hidden>Remover foto</button>
+          </div>
+          <p class="dica" id="dlg-foto-dica">A foto é ligada ao código do material: todas as etiquetas com este código mostram a mesma foto.</p>
+        </div>
+      </div>
+      <div class="dialogo-botoes">
+        <button type="button" class="botao perigo" id="dlg-excluir" hidden>Excluir</button>
+        <span class="espaco"></span>
+        <button type="button" class="botao" data-fechar>Cancelar</button>
+        <button value="salvar" class="botao primario">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialogo dialogo-importar" id="dlg-importar">
+    <form method="dialog" id="form-importar">
+      <h2>Importar planilha</h2>
+      <div id="imp-passo1">
+        <p>Abra a planilha no Excel, vá na aba com a <strong>lista</strong> de materiais (ex.: “Entrada de Dados”, não a aba das etiquetas), selecione as linhas (com a linha de títulos, se tiver), copie com <kbd>Ctrl</kbd>+<kbd>C</kbd> e cole aqui:</p>
+        <textarea id="imp-colar" rows="7" placeholder="Cole aqui (Ctrl+V)…"></textarea>
+        <p class="ou">ou</p>
+        <label class="botao">Escolher arquivo .xlsx ou .csv <input type="file" id="imp-arquivo" accept=".xlsx,.csv,.txt,.tsv" hidden></label>
+        <label id="imp-planilha-rotulo" hidden>Aba da planilha <select id="imp-planilha"></select></label>
+      </div>
+      <div id="imp-passo2" hidden>
+        <label class="check"><input type="checkbox" id="imp-cabecalho"> A primeira linha tem os títulos das colunas</label>
+        <p class="dica">Confira de qual coluna vem cada informação:</p>
+        <div class="mapa" id="imp-mapa"></div>
+        <div class="tabela-rolagem pequena"><table class="tabela" id="imp-previa"></table></div>
+        <fieldset class="modo">
+          <legend>Como importar</legend>
+          <label class="check"><input type="radio" name="modo" value="adicionar" checked> Adicionar novos e atualizar os existentes</label>
+          <label class="check"><input type="radio" name="modo" value="substituir"> Substituir todo o cadastro (as fotos são mantidas)</label>
+        </fieldset>
+      </div>
+      <div class="dialogo-botoes">
+        <button type="button" class="botao" id="imp-voltar" hidden>Voltar</button>
+        <span class="espaco"></span>
+        <button type="button" class="botao" data-fechar>Cancelar</button>
+        <button type="button" class="botao primario" id="imp-confirmar" disabled>Continuar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="medidor" id="medidor" aria-hidden="true"></div>
+
+  <script src="/vendor/qrcode.js"></script>
+  <script src="/comum.js"></script>
+  <script src="/importar.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#d6001c">
+  <title>Material</title>
+  <link rel="icon" href="/img/icone.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/estilo.css">
+  <style>
+    body { background: var(--fundo); }
+    .m-topo {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      padding-top: max(10px, env(safe-area-inset-top));
+      background: var(--superficie);
+      border-bottom: 1px solid var(--borda);
+    }
+    .m-topo img { height: 28px; }
+    .m-topo a { font-size: 13px; color: var(--texto-2); text-decoration: none; }
+    .m-conteudo { width: 100%; max-width: 640px; margin: 0 auto; padding: 16px 16px 40px; display: flex; flex-direction: column; gap: 14px; }
+    .m-foto {
+      margin: 0;
+      background: #fff;
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      overflow: hidden;
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .m-foto a { display: block; width: 100%; height: 100%; }
+    .m-foto img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .m-foto.sem { aspect-ratio: auto; min-height: 200px; background: var(--amarelo-fundo); border: 2px dashed #e0b44c; flex-direction: column; gap: 6px; color: #8a6100; text-align: center; padding: 24px; }
+    .m-foto.sem .grande { font-size: 44px; line-height: 1; }
+    .m-codigo { margin: 4px 0 0; font-size: 28px; line-height: 1.15; letter-spacing: 0.01em; word-break: break-word; }
+    .m-desc { margin: 0; font-size: 17px; color: var(--texto); }
+    .m-dados { margin: 0; background: var(--superficie); border: 1px solid var(--borda); border-radius: 12px; overflow: hidden; }
+    .m-dados div { display: flex; justify-content: space-between; gap: 16px; padding: 11px 14px; border-bottom: 1px solid #eef0f3; }
+    .m-dados div:last-child { border-bottom: 0; }
+    .m-dados dt { color: var(--texto-2); font-size: 14px; flex: 0 0 auto; }
+    .m-dados dd { margin: 0; font-weight: 600; text-align: right; word-break: break-word; }
+    .m-locais h2 { font-size: 14px; color: var(--texto-2); font-weight: 600; margin: 4px 0 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .m-locais ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+    .m-locais li { background: var(--superficie); border: 1px solid var(--borda); border-radius: 8px; padding: 8px 12px; font-weight: 700; font-size: 16px; }
+    .m-locais li span { font-weight: 400; color: var(--texto-2); font-size: 13px; margin-left: 6px; }
+    .m-acoes { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+    .m-acoes .botao { min-height: 48px; font-size: 16px; }
+    .m-rodape { text-align: center; font-size: 12px; color: var(--texto-3); }
+    .m-erro { text-align: center; padding: 48px 16px; }
+    .m-erro h1 { font-size: 22px; margin: 0 0 8px; }
+    .m-erro p { color: var(--texto-2); margin: 0 0 6px; }
+    .carregando { opacity: 0.6; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <header class="m-topo">
+    <img id="m-logo" src="/logo" alt="">
+    <a href="/">Etiquetas de Material</a>
+  </header>
+  <main class="m-conteudo" id="m-conteudo" aria-live="polite">
+    <p class="m-rodape">Carregando…</p>
+  </main>
+  <input type="file" accept="image/*" capture="environment" id="m-camera" hidden>
+  <input type="file" accept="image/*" id="m-galeria" hidden>
+
+  <script src="/comum.js"></script>
+  <script src="/material.js"></script>
+</body>
+</html>
