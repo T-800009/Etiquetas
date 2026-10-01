@@ -53,11 +53,18 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 1mm;
-  height: calc(var(--f) * 0.17);
+  min-height: calc(var(--f) * 0.17);
   flex: 0 0 auto;
 }
-/* Largura fixa: o espaço do logo não depende de a imagem já ter carregado. */
-.etq-logo { flex: 0 0 auto; height: 100%; width: calc(var(--f) * 0.36); object-fit: contain; object-position: left center; }
+/* Tamanho fixo (ajustável pelo layout): o espaço do logo não depende de a imagem já ter carregado. */
+.etq-logo {
+  flex: 0 0 auto;
+  height: calc(var(--f) * 0.17 * var(--t-logo, 1));
+  width: calc(var(--f) * 0.36 * var(--t-logo, 1));
+  max-width: 75%;
+  object-fit: contain;
+  object-position: left center;
+}
 .etq-projeto { min-width: 0; font-size: calc(var(--f) * 0.09 * var(--fg, 1) * var(--t-projeto, 1) * var(--s, 1)); white-space: nowrap; overflow: hidden; }
 
 .etq-codigo,
