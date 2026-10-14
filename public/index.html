@@ -18,6 +18,7 @@
     <nav class="abas" role="tablist">
       <button class="aba ativa" role="tab" data-aba="imprimir" aria-selected="true">Imprimir</button>
       <button class="aba" role="tab" data-aba="materiais" aria-selected="false">Materiais</button>
+      <button class="aba" role="tab" data-aba="postos" aria-selected="false">Posto a posto</button>
       <button class="aba" role="tab" data-aba="config" aria-selected="false">Configurações</button>
     </nav>
   </header>
@@ -189,6 +190,53 @@
     </div>
   </main>
 
+  <!-- ===================== POSTO A POSTO ===================== -->
+  <main id="aba-postos" class="painel-aba postos" hidden>
+    <aside class="pp-lateral nao-imprimir">
+      <div class="pp-comparar">
+        <label>Projeto <select id="pp-novo" aria-label="Projeto que vai entrar"></select></label>
+        <button type="button" class="botao icone" id="pp-inverter" title="Inverter os projetos" aria-label="Inverter os projetos">⇄</button>
+        <label>Comparar com <select id="pp-base" aria-label="Projeto para comparar"></select></label>
+      </div>
+      <div class="pp-geral" id="pp-geral"></div>
+      <ul class="pp-postos" id="pp-postos" aria-label="Postos"></ul>
+      <div class="pp-lateral-rodape">
+        <button type="button" class="botao pequeno" id="pp-planilhas">Planilhas importadas</button>
+      </div>
+    </aside>
+
+    <section class="pp-conteudo">
+      <div class="pp-barra nao-imprimir">
+        <div class="pp-busca">
+          <input id="pp-busca" type="search" placeholder="Bipar ou digitar código, descrição…" autocomplete="off" aria-label="Buscar material">
+          <button type="button" class="botao icone" id="pp-falar" aria-pressed="false" title="Falar o resultado ao bipar (Enter)" aria-label="Falar o resultado ao bipar">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path class="onda" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div class="pp-filtros" id="pp-filtros" role="group" aria-label="Situação"></div>
+        <label class="pp-ordem">Ordenar
+          <select id="pp-ordem">
+            <option value="situacao">Por situação</option>
+            <option value="codigo">Por código</option>
+            <option value="descricao">Por descrição</option>
+            <option value="planilha">Ordem da planilha</option>
+          </select>
+        </label>
+        <div class="barra-direita">
+          <button type="button" class="botao" id="pp-exportar">Exportar Excel</button>
+          <button type="button" class="botao" id="pp-imprimir">Imprimir lista</button>
+          <button type="button" class="botao primario" id="pp-importar">Importar planilha</button>
+        </div>
+      </div>
+      <div class="pp-veredito" id="pp-veredito" role="status" aria-live="polite" hidden></div>
+      <div class="pp-rolagem">
+        <div class="pp-cabecalho-impressao so-impressao" id="pp-cabecalho-impressao"></div>
+        <div id="pp-tabelas"></div>
+        <div class="vazio" id="pp-vazio" hidden></div>
+      </div>
+    </section>
+  </main>
+
   <!-- ===================== CONFIGURAÇÕES ===================== -->
   <main id="aba-config" class="painel-aba config nao-imprimir" hidden>
     <section class="cartao">
@@ -313,10 +361,46 @@
     </form>
   </dialog>
 
+  <dialog class="dialogo dialogo-postos" id="dlg-postos">
+    <form method="dialog" id="form-postos">
+      <h2>Planilhas posto a posto</h2>
+      <div class="pp-importadas" id="pp-importadas"></div>
+      <fieldset class="pp-nova">
+        <legend>Importar planilha</legend>
+        <p class="dica">Uma planilha por projeto: a “Posto a Posto Logística” (aba Master List ou uma aba por posto). Também serve uma lista com coluna Posto ou Endereço, ou só a BOM — aí o site usa os postos do outro projeto.</p>
+        <div class="pp-escolher">
+          <label class="botao">Escolher arquivo .xlsx ou .csv <input type="file" id="pp-arquivo" accept=".xlsx,.csv,.txt,.tsv" hidden></label>
+          <details class="pp-colar">
+            <summary>ou colar do Excel</summary>
+            <textarea id="pp-colar" rows="5" placeholder="Copie as linhas no Excel (com a linha de títulos) e cole aqui…"></textarea>
+          </details>
+        </div>
+        <div class="pp-leitura" id="pp-leitura" hidden>
+          <p class="pp-leitura-info" id="pp-leitura-info"></p>
+          <label class="pp-projeto">Projeto desta planilha
+            <input id="pp-projeto" list="pp-sugestoes" placeholder="Ex.: BC22" autocomplete="off" maxlength="40">
+          </label>
+          <datalist id="pp-sugestoes"></datalist>
+          <p class="dica" id="pp-substitui"></p>
+          <label id="pp-forma-rotulo">Como ler a planilha <select id="pp-forma"></select></label>
+          <div class="pp-previa-postos" id="pp-previa-postos"></div>
+          <div class="tabela-rolagem pequena"><table class="tabela" id="pp-previa"></table></div>
+        </div>
+      </fieldset>
+      <div class="dialogo-botoes">
+        <span class="espaco"></span>
+        <button type="button" class="botao" data-fechar>Fechar</button>
+        <button type="button" class="botao primario" id="pp-confirmar" disabled>Importar</button>
+      </div>
+    </form>
+  </dialog>
+
   <div class="medidor" id="medidor" aria-hidden="true"></div>
 
   <script src="/comum.js"></script>
   <script src="/importar.js"></script>
+  <script src="/posto-a-posto.js"></script>
+  <script src="/postos.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

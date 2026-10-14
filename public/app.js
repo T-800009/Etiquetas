@@ -96,6 +96,7 @@
     agendarFolhas();
     renderTabela();
     renderConfig();
+    Postos.cadastroMudou();
   }
 
   function fotoDe(codigo) {
@@ -129,13 +130,15 @@
   // ---------------------------------------------------------------------------
 
   function mostrarAba(nome) {
-    if (!['imprimir', 'materiais', 'config'].includes(nome)) nome = 'imprimir';
+    if (!['imprimir', 'materiais', 'postos', 'config'].includes(nome)) nome = 'imprimir';
     for (const botao of $$('.aba')) {
       const ativa = botao.dataset.aba === nome;
       botao.classList.toggle('ativa', ativa);
       botao.setAttribute('aria-selected', String(ativa));
     }
     for (const painel of $$('.painel-aba')) painel.hidden = painel.id !== `aba-${nome}`;
+    // A aba Posto a posto só busca as listas quando é aberta.
+    if (nome === 'postos') Postos.mostrar();
   }
 
   for (const botao of $$('.aba')) {
@@ -1183,6 +1186,8 @@
   // Início
   // ---------------------------------------------------------------------------
 
+  // A aba Posto a posto mostra o endereço das etiquetas já cadastradas.
+  Postos.iniciar({ itensCadastro: () => estado.itens });
   preencherLayout();
   mostrarAba(location.hash.slice(1));
   carregar().catch((err) => aviso(`Não foi possível carregar os dados: ${err.message}`, 'erro'));

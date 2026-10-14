@@ -207,6 +207,68 @@ test('telas e página do QR code são servidas', async () => {
   assert.match(logo.headers.get('content-type'), /png/);
 });
 
+test('listas posto a posto: importa, substitui pelo nome do projeto e exclui', async () => {
+  const r = await chamar('POST', '/api/postos/importar', {
+    json: {
+      projeto: ' bc22 ',
+      arquivo: 'Posto a posto BC22.xlsx',
+      origem: 'Aba “Master List” — colunas Posto 0 a Posto 10',
+      itens: [
+        { posto: '01', codigo: ' 10000001-00 ', partNumber: 'Q0000001', descricao: 'Parafuso', qtde: '2', unidade: 'Pç' },
+        { posto: '½', codigo: '', partNumber: 'XX22S01-0002', descricao: 'Suporte', qtde: 'Kit', unidade: 'Pç', extra: 'ignorado' },
+        { posto: 'xx', codigo: '10000003-00' },
+        { posto: '2', codigo: '', partNumber: '' },
+      ],
+    },
+  });
+  assert.equal(r.status, 200);
+  assert.equal(r.dados.posicoes, 3, 'linha sem código nem part number é ignorada');
+
+  let lista = await chamar('GET', '/api/postos');
+  assert.equal(lista.dados.listas.length, 1);
+  const [bc22] = lista.dados.listas;
+  assert.equal(bc22.projeto, 'bc22');
+  assert.equal(bc22.arquivo, 'Posto a posto BC22.xlsx');
+  assert.deepEqual(bc22.itens[0], { posto: '1', codigo: '10000001-00', partNumber: 'Q0000001', descricao: 'Parafuso', qtde: '2', unidade: 'Pç' });
+  assert.deepEqual(
+    bc22.itens.map((i) => i.posto),
+    ['1', '½', ''],
+    'posto inválido vira "sem posto"',
+  );
+
+  // Importar de novo o mesmo projeto (maiúsculas ou minúsculas) troca a lista inteira.
+  const itens = Array.from({ length: 2500 }, (_, i) => ({ posto: String(i % 11), codigo: `${30000000 + i}-00`, descricao: 'Abraçadeira de nylon preta '.repeat(4) }));
+  assert.equal((await chamar('POST', '/api/postos/importar', { json: { projeto: 'BC22', itens } })).status, 200);
+  assert.equal((await chamar('POST', '/api/postos/importar', { json: { projeto: 'BC12', itens: itens.slice(0, 3) } })).status, 200);
+  lista = await chamar('GET', '/api/postos');
+  assert.deepEqual(
+    lista.dados.listas.map((l) => [l.projeto, l.itens.length]),
+    [
+      ['BC12', 3],
+      ['BC22', 2500],
+    ],
+  );
+  assert.equal(lista.dados.listas[1].itens[2499].codigo, '30002499-00', 'mantém a ordem da planilha');
+
+  assert.equal((await chamar('POST', '/api/postos/importar', { json: { projeto: '  ', itens } })).status, 400);
+  assert.equal((await chamar('POST', '/api/postos/importar', { json: { projeto: 'BC10', itens: [{ descricao: 'sem código' }] } })).status, 400);
+
+  // Com PIN, só quem sabe o PIN importa ou exclui; consultar continua livre.
+  await chamar('PUT', '/api/config/pin', { json: { novo: '4321' } });
+  assert.equal((await chamar('POST', '/api/postos/importar', { json: { projeto: 'BC12', itens } })).status, 401);
+  assert.equal((await chamar('DELETE', '/api/postos/BC12')).status, 401);
+  assert.equal((await chamar('GET', '/api/postos')).status, 200);
+  assert.equal((await chamar('DELETE', '/api/postos/bc12', { pin: '4321' })).status, 200);
+  assert.equal((await chamar('DELETE', '/api/postos/bc12', { pin: '4321' })).status, 404);
+  await chamar('PUT', '/api/config/pin', { json: { novo: '' }, pin: '4321' });
+
+  const backup = await chamar('GET', '/api/backup');
+  assert.deepEqual(
+    backup.dados.postos.map((l) => l.projeto),
+    ['BC22'],
+  );
+});
+
 test('busca no Google quando há chave e usa fontes livres quando o Google não acha', async () => {
   const google = await chamar('GET', `/api/imagens/buscar?q=${encodeURIComponent('Porca hexagonal M6')}`);
   assert.equal(google.status, 200);
