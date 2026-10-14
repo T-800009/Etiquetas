@@ -43,6 +43,25 @@ const ESQUEMA = [
     dados BLOB NOT NULL
   )`,
   'CREATE TABLE IF NOT EXISTS tentativas (ip TEXT PRIMARY KEY, inicio INTEGER NOT NULL, falhas INTEGER NOT NULL)',
+  // Aba "Posto a posto": uma lista por projeto (BC22, BC12...), importada da planilha posto a posto.
+  `CREATE TABLE IF NOT EXISTS postos_listas (
+    chave TEXT PRIMARY KEY,
+    projeto TEXT NOT NULL,
+    arquivo TEXT NOT NULL DEFAULT '',
+    origem TEXT NOT NULL DEFAULT '',
+    importado_em TEXT NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS postos_itens (
+    chave TEXT NOT NULL,
+    ordem INTEGER NOT NULL,
+    posto TEXT NOT NULL DEFAULT '',
+    codigo TEXT NOT NULL DEFAULT '',
+    part_number TEXT NOT NULL DEFAULT '',
+    descricao TEXT NOT NULL DEFAULT '',
+    qtde TEXT NOT NULL DEFAULT '',
+    unidade TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (chave, ordem)
+  )`,
 ];
 
 // Cria as tabelas na primeira requisição: não é preciso rodar nenhum comando no banco.
@@ -416,6 +435,69 @@ function comandosSubstituirItens(db, itens) {
 }
 
 // ---------------------------------------------------------------------------
+// Listas posto a posto (aba "Posto a posto": BC22 × BC12)
+// ---------------------------------------------------------------------------
+
+const MAX_POSICOES = 30000;
+
+// '' (sem posto), '½' ou o número do posto ('0' a '99').
+function normalizarPosto(valor) {
+  const t = limparTexto(valor);
+  if (t === '½') return t;
+  if (/^\d{1,2}$/.test(t)) return String(Number(t));
+  return '';
+}
+
+function nomeProjeto(valor) {
+  const projeto = limparTexto(valor).slice(0, 40);
+  if (!projeto) throw new ErroHttp(400, 'Informe o nome do projeto (ex.: BC22).');
+  return projeto;
+}
+
+async function listasPostos(db) {
+  const [{ results: listas }, { results: itens }] = await Promise.all([
+    db.prepare('SELECT * FROM postos_listas ORDER BY projeto').all(),
+    db.prepare('SELECT * FROM postos_itens ORDER BY chave, ordem').all(),
+  ]);
+  const porChave = new Map(listas.map((l) => [l.chave, { projeto: l.projeto, arquivo: l.arquivo, origem: l.origem, importadoEm: l.importado_em, itens: [] }]));
+  for (const i of itens) {
+    porChave.get(i.chave)?.itens.push({ posto: i.posto, codigo: i.codigo, partNumber: i.part_number, descricao: i.descricao, qtde: i.qtde, unidade: i.unidade });
+  }
+  return [...porChave.values()];
+}
+
+// Troca a lista inteira do projeto numa transação (itens em blocos de JSON, como no cadastro).
+function comandosSubstituirPostos(db, chave, lista, itens) {
+  const comandos = [
+    db.prepare('DELETE FROM postos_itens WHERE chave = ?').bind(chave),
+    db
+      .prepare(
+        `INSERT INTO postos_listas (chave, projeto, arquivo, origem, importado_em) VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(chave) DO UPDATE SET projeto = excluded.projeto, arquivo = excluded.arquivo, origem = excluded.origem, importado_em = excluded.importado_em`,
+      )
+      .bind(chave, lista.projeto, lista.arquivo, lista.origem, lista.importadoEm),
+  ];
+  const sql = `INSERT INTO postos_itens (chave, ordem, posto, codigo, part_number, descricao, qtde, unidade)
+    SELECT ?, json_extract(value, '$.o'), json_extract(value, '$.p'), json_extract(value, '$.c'), json_extract(value, '$.n'),
+           json_extract(value, '$.d'), json_extract(value, '$.q'), json_extract(value, '$.u')
+    FROM json_each(?)`;
+  let bloco = [];
+  let tamanho = 0;
+  itens.forEach((i, ordem) => {
+    const texto = JSON.stringify({ o: ordem, p: i.posto, c: i.codigo, n: i.partNumber, d: i.descricao, q: i.qtde, u: i.unidade });
+    if (bloco.length && tamanho + texto.length > 80000) {
+      comandos.push(db.prepare(sql).bind(chave, `[${bloco.join(',')}]`));
+      bloco = [];
+      tamanho = 0;
+    }
+    bloco.push(texto);
+    tamanho += texto.length + 1;
+  });
+  if (bloco.length) comandos.push(db.prepare(sql).bind(chave, `[${bloco.join(',')}]`));
+  return comandos;
+}
+
+// ---------------------------------------------------------------------------
 // Rotas
 // ---------------------------------------------------------------------------
 
@@ -644,9 +726,41 @@ async function rotaApi(request, env, url) {
     return json(configPublica(config, env));
   }
 
+  if (recurso === 'postos' && !id && metodo === 'GET') return json({ listas: await listasPostos(db) });
+
+  if (recurso === 'postos' && id === 'importar' && metodo === 'POST') {
+    await exigirPin(request, db, config);
+    const corpo = await lerJson(request);
+    const projeto = nomeProjeto(corpo.projeto);
+    if (!Array.isArray(corpo.itens)) throw new ErroHttp(400, 'Lista de itens ausente.');
+    if (corpo.itens.length > MAX_POSICOES) throw new ErroHttp(413, `A lista passa de ${MAX_POSICOES} linhas.`);
+    const itens = corpo.itens
+      .map((i) => ({
+        posto: normalizarPosto(i?.posto),
+        codigo: limparTexto(i?.codigo),
+        partNumber: limparTexto(i?.partNumber),
+        descricao: limparTexto(i?.descricao),
+        qtde: limparTexto(i?.qtde).slice(0, 20),
+        unidade: limparTexto(i?.unidade).slice(0, 20),
+      }))
+      .filter((i) => i.codigo || i.partNumber);
+    if (!itens.length) throw new ErroHttp(400, 'Nenhum material com código na lista.');
+    const lista = { projeto, arquivo: limparTexto(corpo.arquivo).slice(0, 200), origem: limparTexto(corpo.origem).slice(0, 200), importadoEm: agora };
+    await db.batch(comandosSubstituirPostos(db, projeto.toUpperCase(), lista, itens));
+    return json({ ...lista, posicoes: itens.length });
+  }
+
+  if (recurso === 'postos' && id && !acao && metodo === 'DELETE') {
+    await exigirPin(request, db, config);
+    const chave = nomeProjeto(id).toUpperCase();
+    const r = await db.batch([db.prepare('DELETE FROM postos_itens WHERE chave = ?').bind(chave), db.prepare('DELETE FROM postos_listas WHERE chave = ?').bind(chave)]);
+    if (!r[1].meta.changes) throw new ErroHttp(404, 'Lista não encontrada.');
+    return json({ ok: true });
+  }
+
   if (recurso === 'backup' && !id && metodo === 'GET') {
-    const [itens, fotos] = await Promise.all([todosItens(db), mapaFotos(db)]);
-    return json({ versao: 1, exportadoEm: agora, itens, fotos }, 200, {
+    const [itens, fotos, postos] = await Promise.all([todosItens(db), mapaFotos(db), listasPostos(db)]);
+    return json({ versao: 1, exportadoEm: agora, itens, fotos, postos }, 200, {
       'Content-Disposition': `attachment; filename="etiquetas-backup-${agora.slice(0, 10)}.json"`,
     });
   }
