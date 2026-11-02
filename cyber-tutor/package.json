@@ -1,12 +1,14 @@
 {
   "name": "t800-hack",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "dev": "wrangler dev --config ./wrangler.toml",
+    "test": "node --experimental-vm-modules --test test/worker.test.mjs",
+    "deploy": "wrangler deploy --config ./wrangler.toml"
   },
   "devDependencies": {
-    "wrangler": "^4.0.0"
+    "wrangler": "4.156.2"
   }
 }

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#111318">
+  <meta name="description" content="T800 HACK — seu espaço para estudar cibersegurança, entender evidências e aprender passo a passo.">
+  <title>T800 HACK</title>
+  <link rel="icon" type="image/jpeg" href="/assets/t800.jpg">
+  <link rel="apple-touch-icon" href="/assets/t800.jpg">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="https://js.puter.com/v2/" defer></script>
+  <script src="/assets/app.js" type="module"></script>
+</head>
+<body>
+<a class="skip-link" href="#prompt">Ir para a mensagem</a>
+<div class="app" id="app">
+  <div class="backdrop" id="backdrop" hidden></div>
+  <aside class="side" id="sidebar" aria-label="Conversas e preferências">
+    <div class="brand">
+      <img class="brand-image" src="/assets/t800.jpg" alt="T-800" width="42" height="46">
+      <div class="brand-copy"><strong>T800 <span>HACK</span></strong><small>CYBERSECURITY WORKSPACE</small></div>
+      <button class="icon-button side-close" id="closeSidebar" aria-label="Fechar menu" title="Fechar menu"><span data-icon="panel"></span></button>
+    </div>
+    <button class="new-chat" id="newChat"><span data-icon="plus"></span> Nova conversa <span class="shortcut">⌘ K</span></button>
+    <div class="preferences">
+      <label class="field-label" for="model">MODELO <span id="catalogState">Puter AI</span></label>
+      <div class="select-wrap"><select id="model" aria-describedby="modelHint"><option value="deepseek-v4.1-flash">DeepSeek V4.1 Flash</option><option value="deepseek-v4-pro">DeepSeek V4 Pro</option><option value="deepseek-v4-pro-0813">DeepSeek V4 Pro 0813</option><option value="deepseek-v4-flash-0731">DeepSeek V4 Flash 0731</option></select><span data-icon="chevron"></span></div>
+      <p class="field-hint" id="modelHint">Carregando modelos disponíveis…</p>
+      <label class="field-label mode-label" for="mode">COMO VAMOS TRABALHAR</label>
+      <div class="select-wrap"><select id="mode"><option value="step">Passo a passo</option><option value="deep">Análise aprofundada</option><option value="quick">Resposta rápida</option><option value="lab">Código e laboratório</option></select><span data-icon="chevron"></span></div>
+    </div>
+    <div class="history-heading"><span class="field-label">SUAS CONVERSAS</span><span id="chatCount">0</span></div>
+    <label class="search"><span data-icon="search"></span><input id="searchChats" type="search" placeholder="Buscar conversa" aria-label="Buscar conversa" autocomplete="off"></label>
+    <nav id="convList" class="conversations" aria-label="Histórico de conversas"></nav>
+    <div class="side-bottom">
+      <div class="account"><div class="account-mark"><span data-icon="user"></span></div><div><strong id="accountName">Sua conta Puter</strong><p id="authState">Conecte para começar</p></div><span class="account-dot" id="accountDot"></span></div>
+      <button class="connect-button" id="signIn">Conectar com Puter <span data-icon="arrow-up-right"></span></button>
+      <div class="history-actions"><button id="exportChat" title="Exportar conversa em Markdown"><span data-icon="download"></span> Exportar</button><button id="importChat" title="Importar conversa (.md ou .json)"><span data-icon="upload"></span> Importar</button><button id="clearHistory" title="Apagar histórico deste navegador"><span data-icon="trash"></span> Limpar</button></div><input id="importFile" type="file" accept=".md,.json,text/markdown,application/json" hidden>
+      <p class="local-note"><span data-icon="lock"></span> Histórico salvo neste navegador</p>
+    </div>
+  </aside>
+  <main class="main" id="main">
+    <header class="topbar">
+      <div class="top-left"><button class="icon-button" id="toggleSidebar" aria-label="Abrir ou recolher menu" aria-expanded="true" aria-controls="sidebar" title="Abrir ou recolher menu"><span data-icon="panel"></span></button><div class="breadcrumb"><strong>T800 HACK</strong><span class="slash">/</span><span id="conversationTitle">Nova conversa</span></div></div>
+      <div class="top-right"><span class="workspace-label"><span class="blue-dot"></span> Cyber Lab</span><button class="icon-button mobile-new" id="mobileNewChat" aria-label="Nova conversa" title="Nova conversa"><span data-icon="plus"></span></button></div>
+    </header>
+    <section class="chat" id="chat" aria-label="Conversa" tabindex="0"><div class="message-width" id="messages"></div></section>
+    <button class="jump-bottom" id="jumpBottom" hidden aria-label="Ir para as mensagens mais recentes"><span data-icon="arrow-down"></span> Última mensagem</button>
+    <div class="composer-shell">
+      <div class="composer-width">
+        <div class="attachment-preview" id="attachmentPreview" hidden><img id="attachmentImage" alt="Prévia da imagem anexada"><div><strong id="fileName"></strong><small>Imagem anexada</small></div><button id="removeFile" class="icon-button" aria-label="Remover imagem"><span data-icon="x"></span></button></div>
+        <form class="composer" id="composer">
+          <label class="sr-only" for="prompt">Mensagem para o T800 HACK</label>
+          <textarea id="prompt" rows="2" placeholder="Cole um log, um código ou descreva seu desafio…" autocomplete="off" maxlength="100000"></textarea>
+          <div class="composer-actions"><div class="composer-left"><button class="attach-button" id="attachButton" type="button" title="Anexar imagem (até 5 MB)"><span data-icon="paperclip"></span><span>Anexar imagem</span></button><input id="file" type="file" accept="image/png,image/jpeg,image/webp" hidden><span class="composer-divider"></span><span id="activeMode" class="active-mode">Passo a passo</span></div><button class="send-button" id="send" type="submit" aria-label="Enviar mensagem" title="Enviar mensagem" disabled><span data-icon="arrow-up"></span></button><button class="stop-button" id="stop" type="button" aria-label="Parar resposta" title="Parar resposta" hidden><span data-icon="square"></span></button></div>
+        </form>
+        <div class="composer-meta"><span id="status" role="status"><span class="status-dot"></span> Pronto para conversar</span><span class="keyboard-hint"><kbd>Enter</kbd> enviar <span>·</span> <kbd>Shift ↵</kbd> nova linha</span></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+<dialog id="clearDialog" class="confirm-dialog"><form method="dialog"><div class="dialog-symbol"><span data-icon="trash"></span></div><h2>Limpar suas conversas?</h2><p>Isso apaga o histórico salvo neste navegador. Exporte o que quiser guardar antes de continuar.</p><div class="dialog-actions"><button value="cancel" class="cancel-button">Cancelar</button><button value="clear" class="danger-button">Limpar histórico</button></div></form></dialog>
+<noscript>Ative o JavaScript para usar o T800 HACK.</noscript>
+</body>
+</html>
