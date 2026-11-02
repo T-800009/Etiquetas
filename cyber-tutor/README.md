@@ -2,7 +2,7 @@
 
 Projeto mantido em `T-800009/Etiquetas`, branch `cyber-tutor-site`, pasta `cyber-tutor`.
 
-O Worker `t800-hack` serve somente os arquivos de `public/`, incluindo a imagem original do T-800. O aplicativo usa a conta Puter do visitante, com histórico no navegador e importação/exportação de conversas. Esta configuração publica diretamente na conta Cloudflare autenticada, em seu subdomínio `workers.dev`.
+O Worker `t800-hack` serve somente os arquivos de `public/`, incluindo a imagem original do T-800. A interface acompanha a referência `https://cyber-tutor-wesley.onrender.com/`: barra lateral, título em degradê, atalhos e caixa de mensagem. O aplicativo usa a conta Puter do visitante, com histórico no navegador e exportação de conversas. Esta configuração publica diretamente na conta Cloudflare autenticada, em seu subdomínio `workers.dev`.
 
 ## Integração GitHub → Cloudflare
 

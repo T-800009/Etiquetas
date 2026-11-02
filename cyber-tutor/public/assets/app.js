@@ -35,7 +35,7 @@ try {
 if (!currentId || !chats[currentId]) currentId = Object.keys(chats).sort((a, b) => chats[b].updated - chats[a].updated)[0] || null;
 const newId = () => Date.now().toString(36) + '-' + Array.from(crypto.getRandomValues(new Uint8Array(6)), n => n.toString(16).padStart(2, '0')).join('');
 function ensureChat() {
-  if (!currentId || !chats[currentId]) { currentId = newId(); chats[currentId] = { title: 'Nova conversa', messages: [], updated: Date.now() }; }
+  if (!currentId || !chats[currentId]) { currentId = newId(); chats[currentId] = { title: 'Novo chat', messages: [], updated: Date.now() }; }
   return chats[currentId];
 }
 function toast(text) {
@@ -121,18 +121,13 @@ function setBusy(value) {
   $('chat').setAttribute('aria-busy', String(value));
 }
 function emptyState() {
-  const root = document.createElement('div'); root.className = 'welcome';
-  root.innerHTML = '<div class="hero-image-wrap"><img class="hero-image" src="/assets/t800.jpg" alt="T-800" width="84" height="94"></div><p class="hero-eyebrow"><span class="blue-dot"></span> SEU ESPAÇO DE INVESTIGAÇÃO</p><h1>T800 <span>HACK</span></h1><p class="welcome-subtitle">Entenda o porquê. Aprenda o próximo passo.</p><p class="welcome-description">Do primeiro log à revisão de código. Traga suas evidências e construa o raciocínio, uma etapa de cada vez.</p><div class="quickstarts"></div><p class="welcome-note">CIBERSEGURANÇA · CTFs · LABORATÓRIOS</p>';
-  const starts = [
-    { icon: 'terminal', title: 'Entender uma saída', detail: 'Logs, erros e diagnósticos', prompt: 'Quero entender uma saída do meu laboratório. Vou colar o log a seguir; explique os achados e o que preciso verificar.' },
-    { icon: 'shield', title: 'Estudar um conceito', detail: 'Fundamentos com exemplos', prompt: 'Explique autenticação e autorização com um exemplo simples e um exercício didático local.' },
-    { icon: 'code', title: 'Revisar um código', detail: 'Encontre a causa. Entenda a correção.', prompt: 'Quero revisar um código do meu projeto. Vou colá-lo a seguir; explique os problemas e como corrigi-los.' }
-  ];
-  for (const s of starts) {
-    const button = document.createElement('button'); button.className = 'quickstart'; button.type = 'button';
-    button.innerHTML = '<span class="quickstart-icon">' + icon(s.icon) + '</span><strong>' + s.title + '</strong><small>' + s.detail + '</small><span class="quickstart-arrow">' + icon('arrow-up-right') + '</span>';
-    button.addEventListener('click', () => { prompt.value = s.prompt; updateDraft(); prompt.focus(); });
-    root.querySelector('.quickstarts').appendChild(button);
+  const root = document.createElement('div'); root.className = 'welcome empty';
+  root.innerHTML = '<img class="heroLogo" src="/assets/t800.jpg" alt="T800" width="82" height="82"><h1><span>T800 HACK</span></h1><p>Seu tutor de cibersegurança para laboratórios, CTFs e pentests autorizados. Cole Nmap, Burp, ffuf, logs, código ou um print; eu explico o raciocínio e sigo com você passo a passo.</p><div class="chips"></div>';
+  const starts = ['Analise esta saída do Nmap e me ensine o próximo passo', 'Explique esta request HTTP do meu CTF', 'Ajude a depurar este exploit do laboratório'];
+  for (const text of starts) {
+    const button = document.createElement('button'); button.className = 'chip'; button.type = 'button'; button.textContent = text;
+    button.addEventListener('click', () => { prompt.value = text; updateDraft(); prompt.focus(); });
+    root.querySelector('.chips').appendChild(button);
   }
   return root;
 }
@@ -185,8 +180,8 @@ function renderAll() {
 function startNewChat() {
   if (busy) return;
   const c = ensureChat();
-  if (c.messages.length) { currentId = newId(); chats[currentId] = { title: 'Nova conversa', messages: [], updated: Date.now() }; }
-  $('searchChats').value = ''; prompt.value = ''; clearAttachment(); updateDraft(); persist(); renderAll(); closeSidebar(); setStatus('Pronto para conversar'); prompt.focus();
+  if (c.messages.length) { currentId = newId(); chats[currentId] = { title: 'Novo chat', messages: [], updated: Date.now() }; }
+  $('searchChats').value = ''; prompt.value = ''; clearAttachment(); updateDraft(); persist(); renderAll(); closeSidebar(); setStatus('Pronto'); prompt.focus();
 }
 $('newChat').addEventListener('click', startNewChat); $('mobileNewChat').addEventListener('click', startNewChat);
 $('clearHistory').addEventListener('click', () => { if (!busy) $('clearDialog').showModal(); });
@@ -232,7 +227,7 @@ function refreshMode() { $('activeMode').textContent = modeSelect.options[modeSe
 modeSelect.addEventListener('change', () => { refreshMode(); savePrefs(); }); refreshMode();
 modelSelect.addEventListener('change', () => { savePrefs(); updateModelHint(); });
 function updateModelHint() {
-  if (knownModels.length) $('modelHint').textContent = visionModel ? 'Imagens usam visão automaticamente.' : 'Modelo verificado no catálogo Puter.';
+  if (knownModels.length) $('modelHint').textContent = visionModel ? 'Com imagem anexada, o T800 HACK troca automaticamente para um modelo Vision.' : 'Modelo verificado no catálogo Puter.';
   else $('modelHint').textContent = 'Catálogo indisponível. Reconecte para verificar os modelos.';
 }
 async function refreshModels() {
@@ -256,8 +251,8 @@ async function refreshAuth() {
   try {
     const signedIn = await window.puter.auth.isSignedIn();
     if (signedIn) {
-      const user = await window.puter.auth.getUser(); $('accountName').textContent = user.username || 'Conta conectada'; $('authState').textContent = 'Puter conectado'; $('accountDot').classList.add('connected'); $('signIn').firstChild.textContent = 'Conta conectada '; $('signIn').setAttribute('aria-label', 'Conta Puter conectada');
-    } else { $('accountName').textContent = 'Sua conta Puter'; $('authState').textContent = 'Conecte para começar'; $('accountDot').classList.remove('connected'); }
+      const user = await window.puter.auth.getUser(); $('accountName').textContent = user.username || 'Conta conectada'; $('authState').textContent = 'Puter: ' + (user.username || 'conectado'); $('accountDot').classList.add('connected'); $('signIn').textContent = 'Conectado'; $('signIn').setAttribute('aria-label', 'Conta Puter conectada');
+    } else { $('accountName').textContent = 'Sua conta Puter'; $('authState').textContent = 'Puter: não conectado'; $('signIn').textContent = 'Entrar com Puter'; $('signIn').removeAttribute('aria-label'); $('accountDot').classList.remove('connected'); }
     return signedIn;
   } catch { $('authState').textContent = 'Puter indisponível'; return false; }
 }
