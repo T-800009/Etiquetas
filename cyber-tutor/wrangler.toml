@@ -1,0 +1,7 @@
+name = "t800-hack"
+compatibility_date = "2026-11-02"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+not_found_handling = "single-page-application"
