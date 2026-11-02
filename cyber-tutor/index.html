@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>Cyber Tutor</title>
+  <script src="https://js.puter.com/v2/"></script>
+  <style>
+    :root{--bg:#07090d;--panel:#0d1117;--panel2:#111823;--line:#202938;--text:#eef4ff;--muted:#8d9bb0;--accent:#5ba8ff;--ok:#49d17d;--warn:#ffca5b;--danger:#ff667d;--radius:18px}
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#142034 0%,transparent 60%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;height:100vh;overflow:hidden}
+    button,select,textarea,input{font:inherit}.app{height:100vh;display:grid;grid-template-columns:280px 1fr}.side{border-right:1px solid var(--line);background:rgba(9,12,18,.9);padding:18px;display:flex;flex-direction:column;gap:14px}.brand{font-weight:800;letter-spacing:.08em;font-size:15px;display:flex;align-items:center;gap:10px}.dot{width:11px;height:11px;border-radius:50%;background:var(--ok);box-shadow:0 0 18px var(--ok)}
+    .new,.ghost,.primary{border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--text);background:var(--panel2);cursor:pointer}.new:hover,.ghost:hover{border-color:#39506c}.primary{background:linear-gradient(180deg,#2e84dc,#1765b2);border-color:#3a91e8;font-weight:700}.primary:disabled{opacity:.5;cursor:not-allowed}.section{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-top:8px}.select{width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--text)}.meta{font-size:12px;color:var(--muted);line-height:1.5}.spacer{flex:1}.userbox{padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+    .main{display:grid;grid-template-rows:auto 1fr auto;min-width:0}.top{height:64px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:rgba(7,9,13,.72);backdrop-filter:blur(12px)}.title{font-weight:700}.status{font-size:12px;color:var(--muted)}
+    .chat{overflow:auto;padding:28px 0 160px}.wrap{width:min(900px,92%);margin:0 auto}.empty{margin:14vh auto 0;text-align:center;max-width:680px}.empty h1{font-size:34px;margin:0 0 12px}.empty p{color:var(--muted);line-height:1.65}.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:24px}.chip{border:1px solid var(--line);background:var(--panel);color:#c9d5e7;border-radius:999px;padding:8px 12px;font-size:13px;cursor:pointer}
+    .msg{display:grid;grid-template-columns:36px 1fr;gap:12px;margin:22px 0}.avatar{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:13px;font-weight:800;border:1px solid var(--line);background:var(--panel2)}.msg.user .avatar{background:#182333}.bubble{min-width:0;line-height:1.65}.msg.user .bubble{color:#dce7f7}.msg.assistant .bubble{color:#f4f7fb}.bubble pre{white-space:pre-wrap;background:#090d13;border:1px solid var(--line);padding:14px;border-radius:12px;overflow:auto}.bubble code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}.filetag{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:#b7c8dd;background:#131b27;border:1px solid var(--line);padding:5px 8px;border-radius:8px;margin-top:8px}
+    .composerShell{position:fixed;bottom:0;left:280px;right:0;padding:22px;background:linear-gradient(180deg,transparent,rgba(7,9,13,.92) 30%,var(--bg) 70%)}.composer{width:min(900px,92%);margin:0 auto;border:1px solid #283449;background:#0d131c;border-radius:20px;padding:10px;box-shadow:0 18px 60px rgba(0,0,0,.35)}.textarea{width:100%;min-height:54px;max-height:180px;resize:none;border:0;outline:0;background:transparent;color:var(--text);padding:8px 10px}.actions{display:flex;align-items:center;justify-content:space-between;gap:10px}.leftActions{display:flex;align-items:center;gap:8px}.attach{cursor:pointer;border:1px solid var(--line);padding:8px 10px;border-radius:10px;color:#c7d4e6;background:#111823}.attach input{display:none}.hint{font-size:11px;color:var(--muted)}.typing{display:inline-flex;gap:5px}.typing i{width:6px;height:6px;border-radius:50%;background:#718198;animation:p 1.2s infinite}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}@keyframes p{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
+    @media(max-width:760px){.app{grid-template-columns:1fr}.side{display:none}.composerShell{left:0}.top{padding:0 14px}.wrap,.composer{width:94%}.empty h1{font-size:28px}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="dot"></span> CYBER TUTOR</div>
+    <button class="new" id="newChat">＋ Novo chat</button>
+    <div class="section">Modelo</div>
+    <select id="model" class="select">
+      <option value="deepseek/deepseek-v4.1-flash">DeepSeek V4.1 Flash — padrão</option>
+      <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro — raciocínio</option>
+      <option value="deepseek/deepseek-v4-pro-0813">DeepSeek V4 Pro 0813 — coding/agentic</option>
+      <option value="deepseek/deepseek-v4-flash-0731">DeepSeek V4 Flash 0731 — rápido</option>
+    </select>
+    <div class="meta">Com imagem anexada, o site troca automaticamente para <b>DeepSeek V4 Flash Vision</b>.</div>
+    <div class="section">Modo de estudo</div>
+    <select id="mode" class="select">
+      <option value="step">Passo a passo</option>
+      <option value="deep">Análise aprofundada</option>
+      <option value="quick">Resposta rápida</option>
+    </select>
+    <div class="spacer"></div>
+    <div class="userbox">
+      <div id="authState" class="meta">Puter: não conectado</div>
+      <button class="ghost" id="signIn" style="width:100%;margin-top:10px">Entrar com Puter</button>
+    </div>
+    <button class="ghost" id="clearHistory">Apagar histórico local</button>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <div class="title">Pentest & CTF Tutor</div>
+      <div class="status" id="status">Pronto</div>
+    </header>
+    <section class="chat" id="chat">
+      <div class="wrap" id="messages">
+        <div class="empty" id="empty">
+          <h1>Aprenda pentest na prática.</h1>
+          <p>Cole saídas do Nmap, Burp, ffuf, logs, código ou um print do laboratório. O tutor explica o que encontrou, sugere o próximo passo e espera seu resultado.</p>
+          <div class="chips">
+            <button class="chip">Analise esta saída do Nmap e me ensine o próximo passo</button>
+            <button class="chip">Explique esta request HTTP do meu CTF</button>
+            <button class="chip">Ajude a depurar este exploit do laboratório</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="composerShell">
+      <div class="composer">
+        <textarea id="prompt" class="textarea" placeholder="Cole a saída do seu laboratório autorizado…"></textarea>
+        <div class="actions">
+          <div class="leftActions">
+            <label class="attach">📎 Anexar print<input id="file" type="file" accept="image/*"></label>
+            <span class="hint" id="fileName"></span>
+          </div>
+          <button class="primary" id="send">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+const SYSTEM = `Você é um tutor técnico de cibersegurança ofensiva para CTFs, Hack The Box, TryHackMe, laboratórios próprios e pentests com autorização explícita.
+Seu objetivo principal é ensinar o raciocínio prático. Quando eu enviar saída de terminal, código, request HTTP, screenshot, log ou erro:
+1) identifique os achados relevantes; 2) explique por que importam; 3) forme hipóteses ordenadas por evidência; 4) sugira o próximo teste; 5) forneça o comando exato e explique os parâmetros; 6) em modo passo a passo, dê apenas UMA ação e aguarde meu retorno.
+Não invente resultados. Diferencie fato observado de hipótese. Quando houver exploit/PoC em laboratório autorizado, explique a vulnerabilidade, a lógica do exploit, como validar e como corrigir. Seja técnico, objetivo e didático. Evite respostas genéricas. Se o pedido sair do contexto de ambiente próprio/autorizado, redirecione para uma forma segura de estudo ou validação.`;
+
+const el = id => document.getElementById(id);
+const chat = el('chat'), messagesEl = el('messages'), empty = el('empty'), promptEl = el('prompt'), sendBtn = el('send'), fileEl = el('file'), fileName = el('fileName'), statusEl = el('status');
+let history = JSON.parse(localStorage.getItem('cyberTutorHistory') || '[]');
+let pendingFile = null;
+
+function escapeHtml(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+function formatText(text=''){
+  const safe=escapeHtml(text);
+  const parts=safe.split(/```/);
+  return parts.map((p,i)=> i%2 ? `<pre><code>${p}</code></pre>` : p.replace(/\n/g,'<br>')).join('');
+}
+function save(){localStorage.setItem('cyberTutorHistory', JSON.stringify(history.slice(-40)));}
+function renderMessage(m){
+  if(empty) empty.style.display='none';
+  const row=document.createElement('div'); row.className='msg '+m.role;
+  row.innerHTML=`<div class="avatar">${m.role==='user'?'EU':'AI'}</div><div class="bubble">${formatText(m.content)}${m.file?`<div class="filetag">📎 ${escapeHtml(m.file)}</div>`:''}</div>`;
+  messagesEl.appendChild(row); chat.scrollTop=chat.scrollHeight; return row;
+}
+function restore(){ if(!history.length) return; if(empty) empty.style.display='none'; history.forEach(renderMessage); }
+restore();
+
+async function authRefresh(){
+  try{
+    const ok=await puter.auth.isSignedIn();
+    if(ok){const u=await puter.auth.getUser(); el('authState').textContent='Puter: '+(u.username||'conectado'); el('signIn').textContent='Conectado';}
+    else{el('authState').textContent='Puter: não conectado'; el('signIn').textContent='Entrar com Puter';}
+  }catch{el('authState').textContent='Puter: aguardando';}
+}
+authRefresh();
+el('signIn').onclick=async()=>{try{await puter.auth.signIn();await authRefresh();}catch(e){alert('Não foi possível entrar no Puter: '+(e.message||e));}};
+
+fileEl.onchange=()=>{pendingFile=fileEl.files?.[0]||null; fileName.textContent=pendingFile?pendingFile.name:'';};
+promptEl.addEventListener('input',()=>{promptEl.style.height='auto';promptEl.style.height=Math.min(promptEl.scrollHeight,180)+'px';});
+promptEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{promptEl.value=b.textContent;promptEl.focus();});
+el('newChat').onclick=()=>{history=[];save();location.reload();};
+el('clearHistory').onclick=()=>{if(confirm('Apagar o histórico deste navegador?')){history=[];save();location.reload();}};
+
+function modeInstruction(){
+ const mode=el('mode').value;
+ if(mode==='deep') return '\nModo: análise aprofundada. Explique fundamentos, hipóteses e alternativas com detalhes.';
+ if(mode==='quick') return '\nModo: resposta rápida. Seja conciso e priorize a próxima ação útil.';
+ return '\nModo: passo a passo. Dê somente uma ação por vez e aguarde o resultado.';
+}
+function transcript(){return history.slice(-18).map(m=>`${m.role==='user'?'USUÁRIO':'ASSISTENTE'}: ${m.content}`).join('\n\n');}
+
+async function send(){
+  const text=promptEl.value.trim(); if(!text && !pendingFile) return;
+  sendBtn.disabled=true; statusEl.textContent='Pensando…';
+  try{
+    if(!(await puter.auth.isSignedIn())) await puter.auth.signIn();
+    const f=pendingFile; const userMsg={role:'user',content:text||'Analise a imagem anexada.',file:f?.name||null};
+    history.push(userMsg); renderMessage(userMsg); save();
+    promptEl.value=''; promptEl.style.height='54px'; pendingFile=null; fileEl.value=''; fileName.textContent='';
+
+    const assistant={role:'assistant',content:''};
+    const row=renderMessage({role:'assistant',content:'<pensando>'}); const bubble=row.querySelector('.bubble');
+    bubble.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';
+
+    let stream;
+    if(f){
+      const combined=`${SYSTEM}${modeInstruction()}\n\nContexto recente:\n${transcript()}\n\nPedido atual: ${text||'Analise cuidadosamente este print do laboratório e explique o próximo passo.'}`;
+      stream=await puter.ai.chat(combined,f,false,{model:'deepseek/deepseek-v4-flash-vision-exp',stream:true,temperature:.2});
+    } else {
+      const msgs=[{role:'system',content:SYSTEM+modeInstruction()},...history.slice(-18).map(m=>({role:m.role,content:m.content}))];
+      stream=await puter.ai.chat(msgs,{model:el('model').value,stream:true,temperature:.2,normalize:true});
+    }
+    bubble.innerHTML=''; let out='';
+    for await(const part of stream){
+      if(part?.type==='error') throw new Error(part.message||'Erro do provedor');
+      const t=part?.type==='text'?part.text:(part?.text||'');
+      if(t){out+=t;bubble.innerHTML=formatText(out);chat.scrollTop=chat.scrollHeight;}
+    }
+    assistant.content=out||'Não recebi texto do modelo.'; history.push(assistant); save(); statusEl.textContent='Pronto';
+  }catch(e){
+    statusEl.textContent='Erro';
+    renderMessage({role:'assistant',content:'Erro ao consultar a IA: '+(e.message||String(e))+'\n\nSe for a primeira vez, confirme o login/permissão do Puter e tente novamente.'});
+  }finally{sendBtn.disabled=false;promptEl.focus();}
+}
+sendBtn.onclick=send;
+</script>
+</body>
+</html>
