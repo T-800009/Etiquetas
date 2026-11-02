@@ -1,131 +1,209 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#07090d">
-<title>Cyber Tutor // Offensive Security Lab</title>
-<script src="https://js.puter.com/v2/"></script>
-<style>
-:root{--bg:#06080c;--bg2:#090d14;--panel:rgba(13,18,27,.82);--panel2:#101722;--panel3:#141e2b;--line:rgba(126,155,194,.16);--line2:rgba(91,168,255,.34);--text:#f4f7fb;--muted:#8c9aae;--muted2:#607086;--accent:#66b0ff;--accent2:#7c6cff;--ok:#4ade80;--warn:#fbbf24;--danger:#fb7185;--shadow:0 26px 80px rgba(0,0,0,.42);--radius:18px}
-*{box-sizing:border-box}html,body{height:100%}body{margin:0;overflow:hidden;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(900px 520px at 70% -8%,rgba(54,116,188,.18),transparent 65%),radial-gradient(600px 480px at -5% 95%,rgba(124,108,255,.10),transparent 70%),var(--bg)}
-button,textarea,select,input{font:inherit}.hidden{display:none!important}.app{display:grid;grid-template-columns:294px minmax(0,1fr);height:100%}.sidebar{position:relative;z-index:20;display:flex;flex-direction:column;gap:14px;padding:18px 16px;border-right:1px solid var(--line);background:linear-gradient(180deg,rgba(9,13,20,.96),rgba(7,10,15,.94));backdrop-filter:blur(18px)}
-.brand{display:flex;align-items:center;justify-content:space-between;padding:3px 4px 12px}.brandLeft{display:flex;align-items:center;gap:11px}.logo{width:33px;height:33px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#1a2638,#0c121c);border:1px solid var(--line2);box-shadow:inset 0 0 25px rgba(91,168,255,.09),0 0 24px rgba(91,168,255,.08);font-size:15px}.brandText b{display:block;font-size:13px;letter-spacing:.14em}.brandText span{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}.liveDot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 14px var(--ok)}
-.btn,.select,.iconBtn{border:1px solid var(--line);background:rgba(15,22,32,.86);color:var(--text);border-radius:12px;transition:.18s ease}.btn{padding:10px 12px;cursor:pointer}.btn:hover,.iconBtn:hover{border-color:var(--line2);background:#121c29;transform:translateY(-1px)}.btn.primary{border-color:rgba(91,168,255,.55);background:linear-gradient(180deg,#2c83de,#1665b5);font-weight:750;box-shadow:0 10px 30px rgba(30,113,196,.2)}.btn.primary:disabled{opacity:.5;cursor:not-allowed;transform:none}.btn.danger:hover{border-color:rgba(251,113,133,.5);color:#fecdd3}.iconBtn{width:36px;height:36px;display:grid;place-items:center;cursor:pointer;padding:0}.newChat{width:100%;text-align:left;display:flex;align-items:center;gap:10px;font-weight:650}.newChat span:first-child{font-size:18px;color:var(--accent)}
-.label{margin:4px 3px -4px;font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.14em;font-weight:700}.select{width:100%;padding:10px 11px;outline:none;cursor:pointer}.select:focus{border-color:var(--line2)}.modelMeta{font-size:11px;line-height:1.5;color:var(--muted);padding:0 3px}.sessionsHead{display:flex;align-items:center;justify-content:space-between;margin-top:4px}.sessions{min-height:80px;overflow:auto;display:flex;flex-direction:column;gap:5px;padding-right:2px}.session{position:relative;display:flex;align-items:center;gap:9px;padding:9px 33px 9px 10px;border:1px solid transparent;border-radius:11px;color:#b6c2d2;cursor:pointer;font-size:12px}.session:hover{background:rgba(255,255,255,.025);border-color:var(--line)}.session.active{background:rgba(70,126,190,.11);border-color:rgba(91,168,255,.22);color:#eaf3ff}.session .sTitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.session .remove{position:absolute;right:7px;opacity:0;background:transparent;border:0;color:var(--muted);cursor:pointer}.session:hover .remove{opacity:1}.sidebarFoot{margin-top:auto;display:grid;gap:8px}.authCard{padding:11px;border:1px solid var(--line);border-radius:13px;background:rgba(14,20,29,.76)}.authLine{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}.authLine .dot{width:7px;height:7px;border-radius:50%;background:var(--warn)}.authLine.connected .dot{background:var(--ok);box-shadow:0 0 10px rgba(74,222,128,.6)}
-.main{min-width:0;display:grid;grid-template-rows:64px minmax(0,1fr)}.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid var(--line);background:rgba(7,10,15,.67);backdrop-filter:blur(16px);z-index:10}.topLeft{display:flex;align-items:center;gap:12px;min-width:0}.mobileMenu{display:none}.titleBlock{min-width:0}.titleBlock b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.titleBlock span{display:block;font-size:10px;color:var(--muted);margin-top:2px}.topRight{display:flex;align-items:center;gap:8px}.statusPill{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:var(--muted);font-size:10px;background:rgba(14,20,29,.7)}.statusPill i{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px rgba(74,222,128,.55)}
-.workspace{position:relative;min-height:0}.chat{height:100%;overflow:auto;padding:26px 0 170px;scroll-behavior:smooth}.content{width:min(940px,92%);margin:0 auto}.hero{padding-top:min(11vh,105px);text-align:center}.heroBadge{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid var(--line2);border-radius:999px;color:#b9dafe;background:rgba(37,94,154,.08);font-size:10px;text-transform:uppercase;letter-spacing:.12em}.hero h1{font-size:clamp(30px,4.2vw,48px);letter-spacing:-.045em;margin:18px 0 12px;background:linear-gradient(135deg,#fff 20%,#b8d9ff 60%,#a99cff);-webkit-background-clip:text;background-clip:text;color:transparent}.hero p{max-width:700px;margin:0 auto;color:var(--muted);line-height:1.7;font-size:14px}.featureGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:28px auto 0;max-width:760px}.feature{padding:13px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,rgba(16,23,34,.76),rgba(10,15,22,.62));text-align:left}.feature strong{font-size:11px;display:block;margin-bottom:5px}.feature span{font-size:10px;color:var(--muted);line-height:1.45}.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px}.chip{cursor:pointer;border:1px solid var(--line);background:rgba(13,19,28,.78);color:#bfcde0;border-radius:999px;padding:8px 12px;font-size:11px}.chip:hover{border-color:var(--line2);color:#eaf4ff}
-.msg{display:grid;grid-template-columns:38px minmax(0,1fr);gap:13px;margin:20px 0 28px}.avatar{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;border:1px solid var(--line);background:linear-gradient(145deg,#152033,#0c121b);font-size:10px;font-weight:800;letter-spacing:.06em}.msg.user .avatar{border-color:rgba(124,108,255,.28)}.msg.assistant .avatar{border-color:rgba(91,168,255,.28);color:#badeff}.msgBody{min-width:0}.msgHead{display:flex;align-items:center;gap:8px;margin:1px 0 7px}.msgHead b{font-size:11px}.msgHead span{font-size:9px;color:var(--muted2)}.bubble{color:#e6edf7;line-height:1.72;font-size:13.5px;overflow-wrap:anywhere}.msg.user .bubble{color:#d8e2ef}.bubble h1,.bubble h2,.bubble h3{margin:16px 0 8px;line-height:1.3}.bubble h1{font-size:20px}.bubble h2{font-size:17px}.bubble h3{font-size:15px}.bubble strong{color:#fff}.bubble ul,.bubble ol{padding-left:22px}.bubble li{margin:4px 0}.codeWrap{position:relative;margin:12px 0}.codeWrap pre{margin:0;background:#05080d;border:1px solid var(--line);padding:42px 14px 14px;border-radius:13px;overflow:auto;color:#d8e7f8}.codeTop{position:absolute;top:0;left:0;right:0;height:31px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 9px;color:var(--muted);font-size:9px}.copyCode{border:0;background:transparent;color:#a8bad0;cursor:pointer;font-size:9px}.inlineCode{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#101722;border:1px solid var(--line);border-radius:6px;padding:1px 5px;color:#cde5ff}.attachmentPreview{margin-top:10px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:#0e151f;color:#b7c7d9;font-size:10px}.attachmentPreview img{width:42px;height:42px;border-radius:7px;object-fit:cover}.msgTools{display:flex;gap:7px;margin-top:8px;opacity:0;transition:.15s}.msg:hover .msgTools{opacity:1}.miniBtn{border:0;background:transparent;color:var(--muted);font-size:9px;padding:3px;cursor:pointer}.miniBtn:hover{color:#dbeafe}.typing{display:inline-flex;align-items:center;gap:5px;padding:9px 0}.typing i{width:6px;height:6px;border-radius:50%;background:#6fa8e8;animation:typing 1.1s infinite}.typing i:nth-child(2){animation-delay:.14s}.typing i:nth-child(3){animation-delay:.28s}@keyframes typing{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
-.composerArea{position:absolute;left:0;right:0;bottom:0;padding:24px 0 20px;background:linear-gradient(180deg,transparent 0%,rgba(6,8,12,.9) 28%,var(--bg) 58%);pointer-events:none}.composer{pointer-events:auto;width:min(940px,92%);margin:0 auto;border:1px solid rgba(115,145,184,.23);background:rgba(12,18,27,.94);backdrop-filter:blur(20px);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;transition:.18s}.composer:focus-within{border-color:rgba(91,168,255,.42);box-shadow:0 22px 80px rgba(0,0,0,.45),0 0 0 3px rgba(91,168,255,.04)}.fileBar{display:none;align-items:center;gap:10px;padding:9px 11px 0}.fileBar.show{display:flex}.fileThumb{width:48px;height:48px;border-radius:9px;object-fit:cover;border:1px solid var(--line)}.fileInfo{min-width:0;flex:1}.fileInfo b{font-size:10px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fileInfo span{font-size:9px;color:var(--muted)}.textarea{display:block;width:100%;min-height:62px;max-height:210px;padding:13px 14px 6px;resize:none;border:0;outline:0;background:transparent;color:var(--text);line-height:1.55}.textarea::placeholder{color:#657387}.composerFoot{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 9px 9px}.leftTools{display:flex;align-items:center;gap:6px}.attach{display:flex;align-items:center;gap:6px;cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:7px 9px;color:#aebdd0;background:#101722;font-size:10px}.attach:hover{border-color:var(--line2)}.attach input{display:none}.kbd{font-size:9px;color:var(--muted2);margin-left:4px}.send{min-width:82px}.disclaimer{text-align:center;color:#536177;font-size:8.5px;margin-top:8px;letter-spacing:.02em}
-.toast{position:fixed;right:18px;bottom:18px;z-index:50;padding:10px 13px;border-radius:11px;background:#111a26;border:1px solid var(--line2);box-shadow:var(--shadow);font-size:11px;color:#dcecff;transform:translateY(20px);opacity:0;pointer-events:none;transition:.2s}.toast.show{transform:translateY(0);opacity:1}.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:15}
-@media(max-width:820px){.app{grid-template-columns:1fr}.sidebar{position:fixed;left:0;top:0;bottom:0;width:294px;transform:translateX(-102%);transition:.23s;box-shadow:30px 0 80px rgba(0,0,0,.45)}.sidebar.open{transform:translateX(0)}.overlay.show{display:block}.mobileMenu{display:grid}.topbar{padding:0 13px}.topRight .statusPill{display:none}.content,.composer{width:94%}.hero{padding-top:8vh}.featureGrid{grid-template-columns:1fr}.feature:nth-child(3){display:none}.msg{grid-template-columns:32px 1fr}.avatar{width:31px;height:31px}.kbd{display:none}}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>T800 HACK</title>
+  <script src="https://js.puter.com/v2/"></script>
+  <style>
+    :root{
+      --bg:#0d0d0c;--bg2:#12110f;--panel:#151411;--panel2:#1b1916;--panel3:#211e1a;
+      --line:#2b2823;--line2:#3a352e;--text:#f3efe7;--muted:#9e978b;--soft:#c8c0b3;
+      --accent:#d97757;--accent2:#b85e41;--green:#64c18b;--danger:#ff6b72;--shadow:0 18px 55px rgba(0,0,0,.38);
+      --sidebar:286px;--radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
+    button,select,textarea,input{font:inherit}
+    button{color:inherit}
+    .app{height:100dvh;display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);overflow:hidden}
+
+    .sidebar{min-height:0;border-right:1px solid var(--line);background:linear-gradient(180deg,#11100e 0%,#0e0d0c 100%);padding:18px 14px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+    .brand{display:flex;align-items:center;gap:11px;padding:4px 7px 10px}
+    .brandMark{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(145deg,#28231e,#171512);border:1px solid var(--line2);box-shadow:inset 0 1px rgba(255,255,255,.04)}
+    .brandMark span{font-weight:900;font-size:12px;color:#f4d3c8;letter-spacing:-.04em}
+    .brandText strong{display:block;font-size:14px;letter-spacing:.13em}.brandText small{color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+    .newChat{width:100%;border:1px solid var(--line2);background:#191714;border-radius:12px;padding:11px 13px;text-align:left;cursor:pointer;transition:.16s}
+    .newChat:hover{background:#211e1a;border-color:#51483e}
+    .sectionLabel{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#746e65;padding:8px 8px 2px}
+    .control{width:100%;border:1px solid var(--line);background:#13120f;color:var(--text);border-radius:11px;padding:10px 11px;outline:none}
+    .control:focus{border-color:#5d5147}
+    .modelMeta{font-size:11px;color:var(--muted);line-height:1.45;padding:0 4px}
+    .history{min-height:0;overflow:auto;padding-right:2px;scrollbar-width:thin;scrollbar-color:#38322c transparent}
+    .historyItem{display:block;width:100%;border:0;background:transparent;color:#cfc8bd;text-align:left;border-radius:10px;padding:9px 10px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+    .historyItem:hover,.historyItem.active{background:#191714;color:#fff}
+    .sidebarBottom{margin-top:auto;display:grid;gap:8px}
+    .smallBtn{border:1px solid var(--line);background:#141310;border-radius:10px;padding:9px 10px;cursor:pointer;font-size:12px;color:#bdb6ac}
+    .smallBtn:hover{background:#1d1b17;color:#fff}
+    .auth{font-size:11px;color:var(--muted);padding:0 3px}
+
+    .main{min-width:0;min-height:0;height:100dvh;display:grid;grid-template-rows:58px minmax(0,1fr) auto;overflow:hidden;background:
+      radial-gradient(900px 360px at 65% -80px,rgba(217,119,87,.07),transparent 65%),var(--bg)}
+    .topbar{border-bottom:1px solid rgba(43,40,35,.82);display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:rgba(13,13,12,.84);backdrop-filter:blur(16px);z-index:5}
+    .topTitle{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:650}.liveDot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 12px rgba(100,193,139,.6)}
+    .topRight{display:flex;align-items:center;gap:8px}.status{font-size:11px;color:var(--muted)}
+    .iconBtn{border:1px solid var(--line);background:#141310;border-radius:9px;padding:7px 9px;cursor:pointer;font-size:11px;color:#aaa398}.iconBtn:hover{background:#1c1916;color:#fff}
+
+    .chatViewport{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scroll-behavior:smooth;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:#3d372f transparent}
+    .chatViewport::-webkit-scrollbar{width:10px}.chatViewport::-webkit-scrollbar-thumb{background:#37312b;border:3px solid transparent;background-clip:padding-box;border-radius:999px}
+    .conversation{width:min(860px,calc(100% - 42px));margin:0 auto;padding:28px 0 46px}
+    .hero{min-height:60vh;display:grid;place-items:center;text-align:center}.heroInner{max-width:650px}.eyebrow{font-size:11px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px}.hero h1{font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:42px;line-height:1.08;margin:0;color:#f1ece4}.hero p{color:var(--muted);font-size:14px;line-height:1.75;max-width:590px;margin:16px auto 0}.suggestions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:28px}.suggestion{border:1px solid var(--line);background:#12110f;border-radius:14px;padding:13px 14px;color:#c9c1b6;text-align:left;cursor:pointer;font-size:12px;line-height:1.45;transition:.16s}.suggestion:hover{border-color:#51483e;background:#181613;color:#fff;transform:translateY(-1px)}
+
+    .msg{display:grid;grid-template-columns:38px minmax(0,1fr);gap:13px;margin:0 0 28px}.avatar{width:34px;height:34px;border:1px solid var(--line);border-radius:11px;display:grid;place-items:center;font-size:10px;font-weight:800;background:#171512;color:#c9c1b6}.msg.user .avatar{background:#1b2026;color:#d9e5f3}.msg.assistant .avatar{background:#201914;color:#efb49f;border-color:#49372f}.content{min-width:0;line-height:1.72;font-size:14px;color:#e6e0d7}.msg.user .content{color:#d4cfc6}.content p{margin:0 0 12px}.content h1,.content h2,.content h3{font-family:Georgia,"Times New Roman",serif;font-weight:500;color:#f6f0e8;margin:22px 0 10px}.content h3{font-size:19px}.content strong{color:#fff}.content code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:#181613;border:1px solid #29251f;border-radius:6px;padding:2px 5px;color:#f0cabd}.codeWrap{position:relative;margin:13px 0 16px}.content pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#090909;border:1px solid var(--line);padding:15px 16px;border-radius:13px;overflow:auto;color:#ddd5ca}.content pre code{padding:0;border:0;background:transparent;color:#ddd5ca}.copyCode{position:absolute;right:8px;top:8px;border:1px solid #332e28;background:#12110f;border-radius:7px;padding:5px 7px;color:#8f887e;font-size:10px;cursor:pointer}.copyCode:hover{color:#fff}.filePill{display:inline-flex;align-items:center;gap:7px;margin-top:8px;padding:6px 9px;border:1px solid var(--line);border-radius:9px;background:#15130f;color:#aaa398;font-size:11px}.imagePreview{margin-top:10px;max-width:420px;border-radius:13px;border:1px solid var(--line);display:block}.typing{display:inline-flex;gap:5px;padding:6px 0}.typing i{width:6px;height:6px;background:#8e8174;border-radius:50%;animation:pulse 1.1s infinite}.typing i:nth-child(2){animation-delay:.13s}.typing i:nth-child(3){animation-delay:.26s}@keyframes pulse{0%,60%,100%{opacity:.28;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+
+    .composerZone{border-top:1px solid rgba(43,40,35,.72);background:linear-gradient(180deg,rgba(13,13,12,.76),#0d0d0c 30%);padding:12px 18px 16px;z-index:4}
+    .composer{width:min(860px,calc(100% - 10px));margin:0 auto;border:1px solid #38322c;background:#171512;border-radius:19px;padding:9px 10px 9px;box-shadow:var(--shadow)}
+    .textarea{width:100%;min-height:48px;max-height:160px;resize:none;border:0;outline:0;background:transparent;color:var(--text);padding:9px 10px;line-height:1.5}.textarea::placeholder{color:#716b63}
+    .composerFoot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px}.leftTools{display:flex;align-items:center;gap:7px;min-width:0}.attach{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:#12110f;border-radius:10px;padding:7px 9px;cursor:pointer;color:#a8a198;font-size:11px}.attach input{display:none}.fileName{font-size:10px;color:#817a70;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}.send{border:1px solid #9f4d36;background:linear-gradient(180deg,#d87655,#bc6042);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;box-shadow:0 7px 18px rgba(185,91,61,.16)}.send:disabled{opacity:.45;cursor:not-allowed}.send:hover:not(:disabled){filter:brightness(1.06)}
+    .footHint{text-align:center;color:#5f5a53;font-size:9px;margin-top:7px;letter-spacing:.03em}
+
+    .mobileToggle{display:none}
+    @media(max-width:820px){
+      :root{--sidebar:0px}.app{grid-template-columns:1fr}.sidebar{position:fixed;left:0;top:0;bottom:0;width:286px;z-index:20;transform:translateX(-100%);transition:.2s;box-shadow:20px 0 50px rgba(0,0,0,.35)}.sidebar.open{transform:translateX(0)}.mobileToggle{display:inline-flex}.topbar{padding:0 12px}.conversation{width:min(100% - 24px,860px);padding-top:18px}.composerZone{padding:10px 8px 12px}.composer{width:100%}.hero h1{font-size:34px}.suggestions{grid-template-columns:1fr}.msg{grid-template-columns:32px minmax(0,1fr);gap:9px}.avatar{width:30px;height:30px}}
+  </style>
 </head>
 <body>
-<div class="overlay" id="overlay"></div>
 <div class="app">
-<aside class="sidebar" id="sidebar">
-  <div class="brand"><div class="brandLeft"><div class="logo">⌁</div><div class="brandText"><b>CYBER TUTOR</b><span>Offensive Security Lab</span></div></div><span class="liveDot"></span></div>
-  <button class="btn newChat" id="newChat"><span>＋</span><span>Novo chat</span></button>
-  <div class="label">Modelo</div>
-  <select class="select" id="model">
-    <option value="deepseek/deepseek-v4.1-flash">DeepSeek V4.1 Flash · equilibrado</option>
-    <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro · profundo</option>
-    <option value="deepseek/deepseek-v4-pro-0813">DeepSeek V4 Pro 0813 · coding</option>
-    <option value="deepseek/deepseek-v4-flash-0731">DeepSeek V4 Flash 0731 · rápido</option>
-  </select>
-  <div class="modelMeta">Prints usam automaticamente um modelo vision compatível. O processamento ocorre na nuvem.</div>
-  <div class="label">Modo</div>
-  <select class="select" id="mode">
-    <option value="step">Passo a passo</option>
-    <option value="deep">Análise profunda</option>
-    <option value="quick">Resposta rápida</option>
-    <option value="code">Código & exploit de laboratório</option>
-  </select>
-  <div class="sessionsHead"><div class="label">Conversas</div><button class="iconBtn" id="exportBtn" title="Exportar conversa">⇩</button></div>
-  <div class="sessions" id="sessions"></div>
-  <div class="sidebarFoot">
-    <div class="authCard"><div class="authLine" id="authLine"><span class="dot"></span><span id="authState">Puter desconectado</span></div><button class="btn" id="signIn" style="width:100%;margin-top:9px">Entrar com Puter</button></div>
-    <button class="btn danger" id="clearAll">Limpar histórico local</button>
-  </div>
-</aside>
-<main class="main">
-  <header class="topbar">
-    <div class="topLeft"><button class="iconBtn mobileMenu" id="menuBtn">☰</button><div class="titleBlock"><b id="chatTitle">Novo laboratório</b><span id="subtitle">Pentest autorizado · tutor técnico</span></div></div>
-    <div class="topRight"><div class="statusPill"><i></i><span id="status">Pronto</span></div><button class="iconBtn" id="topExport" title="Exportar">⇩</button></div>
-  </header>
-  <section class="workspace">
-    <div class="chat" id="chat"><div class="content" id="messages"></div></div>
-    <div class="composerArea">
-      <div class="composer">
-        <div class="fileBar" id="fileBar"><img class="fileThumb" id="fileThumb"><div class="fileInfo"><b id="fileName"></b><span>Imagem pronta para análise</span></div><button class="iconBtn" id="removeFile">×</button></div>
-        <textarea class="textarea" id="prompt" placeholder="Cole Nmap, Burp, logs, código, erro ou descreva seu CTF…"></textarea>
-        <div class="composerFoot"><div class="leftTools"><label class="attach">📎 Anexar print<input id="file" type="file" accept="image/*"></label><span class="kbd">Enter envia · Shift+Enter quebra linha</span></div><button class="btn primary send" id="send">Enviar</button></div>
-      </div>
-      <div class="disclaimer">Projetado para CTFs, laboratórios próprios e testes com autorização explícita.</div>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="brandMark"><span>T8</span></div><div class="brandText"><strong>T800 HACK</strong><small>Offensive Security Tutor</small></div></div>
+    <button class="newChat" id="newChat">＋ Novo chat</button>
+
+    <div class="sectionLabel">Modelo</div>
+    <select id="model" class="control">
+      <option value="deepseek/deepseek-v4.1-flash">DeepSeek V4.1 Flash — padrão</option>
+      <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro — raciocínio</option>
+      <option value="deepseek/deepseek-v4-pro-0813">DeepSeek V4 Pro 0813 — coding</option>
+      <option value="deepseek/deepseek-v4-flash-0731">DeepSeek V4 Flash 0731 — rápido</option>
+    </select>
+    <div class="modelMeta">Com imagem, o T800 HACK troca automaticamente para um modelo Vision.</div>
+
+    <div class="sectionLabel">Modo</div>
+    <select id="mode" class="control">
+      <option value="step">Passo a passo</option>
+      <option value="deep">Análise profunda</option>
+      <option value="quick">Resposta rápida</option>
+      <option value="lab">Código & exploit de laboratório</option>
+    </select>
+
+    <div class="sectionLabel">Conversas</div>
+    <div class="history" id="historyList"></div>
+
+    <div class="sidebarBottom">
+      <div class="auth" id="authState">Puter: verificando…</div>
+      <button class="smallBtn" id="signIn">Entrar com Puter</button>
+      <button class="smallBtn" id="clearAll">Apagar histórico local</button>
     </div>
-  </section>
-</main>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topTitle"><button class="iconBtn mobileToggle" id="mobileToggle">☰</button><span class="liveDot"></span><span id="chatTitle">T800 HACK</span></div>
+      <div class="topRight"><span class="status" id="status">Pronto</span><button class="iconBtn" id="exportBtn">Exportar</button></div>
+    </header>
+
+    <section class="chatViewport" id="chatViewport">
+      <div class="conversation" id="messages">
+        <div class="hero" id="hero"><div class="heroInner">
+          <div class="eyebrow">T800 HACK · Cyber Tutor</div>
+          <h1>Raciocine como pentester.<br>Aprenda fazendo.</h1>
+          <p>Cole Nmap, Burp, ffuf, logs, código, erros ou screenshots de laboratórios e CTFs autorizados. O tutor interpreta os achados, explica o raciocínio e conduz o próximo passo.</p>
+          <div class="suggestions">
+            <button class="suggestion">Analise esta saída do Nmap e me ensine o próximo passo</button>
+            <button class="suggestion">Explique esta request HTTP do meu CTF</button>
+            <button class="suggestion">Ajude a depurar este exploit do meu laboratório</button>
+            <button class="suggestion">Quero entender privilege escalation passo a passo</button>
+          </div>
+        </div></div>
+      </div>
+    </section>
+
+    <footer class="composerZone">
+      <div class="composer">
+        <textarea id="prompt" class="textarea" placeholder="Cole a saída do laboratório, código ou descreva o desafio…"></textarea>
+        <div class="composerFoot">
+          <div class="leftTools"><label class="attach">＋ Anexar print<input id="file" type="file" accept="image/*"></label><span class="fileName" id="fileName"></span></div>
+          <button class="send" id="send">Enviar</button>
+        </div>
+      </div>
+      <div class="footHint">T800 HACK pode cometer erros. Valide comandos e resultados no seu ambiente autorizado.</div>
+    </footer>
+  </main>
 </div>
-<div class="toast" id="toast"></div>
+
 <script>
-const SYSTEM=`Você é CYBER TUTOR, um tutor técnico de cibersegurança ofensiva, CTF, segurança web, redes, reverse engineering, análise de vulnerabilidades e depuração de PoCs em ambientes próprios ou explicitamente autorizados.
+const SYSTEM=`Você é T800 HACK, um tutor técnico de cibersegurança ofensiva para CTFs, Hack The Box, TryHackMe, laboratórios próprios, ambientes educacionais e pentests com autorização explícita.
+Seu objetivo é ensinar raciocínio prático de segurança ofensiva com precisão técnica.
 
-OBJETIVO: ensinar o raciocínio prático do pentest. Seja técnico, específico e útil. Não invente resultados e não trate hipótese como fato.
+REGRAS DE INTERAÇÃO:
+- Quando o contexto já indicar CTF, HTB, TryHackMe, laboratório próprio ou pentest autorizado, NÃO volte a pedir autorização, escopo ou confirmação. Vá direto para a análise técnica.
+- Diferencie claramente FATO OBSERVADO de HIPÓTESE.
+- Não invente outputs, serviços, versões, vulnerabilidades ou resultados.
+- Quando eu colar terminal, código, logs, requests HTTP, resposta HTTP, screenshot ou erro: identifique achados relevantes, explique por que importam, ordene hipóteses por evidência e sugira o teste mais útil seguinte.
+- Em modo passo a passo, forneça apenas UMA ação útil por resposta e aguarde meu retorno.
+- Em laboratório autorizado, explique vulnerabilidades, PoCs, exploits, depuração, payloads, funcionamento interno, mitigação e detecção de forma didática.
+- Evite respostas genéricas. Prefira explicar exatamente o que testar, qual comando usar, cada parâmetro e o que esperar do resultado.
+- Se uma premissa minha estiver errada, corrija diretamente e explique o motivo.
+- Quando uma saída for ambígua, diga exatamente qual evidência falta.
 
-CONTEXTO AUTORIZADO: quando o usuário já disser que está em CTF, Hack The Box, TryHackMe, laboratório próprio, ambiente de treinamento ou pentest autorizado, aceite esse contexto e NÃO volte a pedir confirmação de autorização em toda resposta. Vá direto à análise técnica.
+FORMATO PREFERIDO QUANDO HOUVER ARTEFATO TÉCNICO:
+ACHADOS
+INTERPRETAÇÃO
+HIPÓTESES
+PRÓXIMO PASSO
+COMANDO
+POR QUÊ
+O QUE ESPERAR
 
-QUANDO RECEBER TERMINAL, LOG, CÓDIGO, HTTP OU PRINT:
-- extraia os achados relevantes;
-- explique por que cada achado importa;
-- separe fatos observados de hipóteses;
-- ordene hipóteses por evidência/probabilidade;
-- indique o próximo teste mais informativo;
-- forneça comandos completos e explique parâmetros importantes;
-- diga o que esperar do resultado;
-- em modo passo a passo, execute mentalmente apenas uma etapa por resposta e aguarde o retorno.
+Se for uma pergunta conceitual simples, responda naturalmente sem forçar esse formato.`;
 
-EM CÓDIGO/POC DE LABORATÓRIO: explique a falha, a lógica do PoC, pré-condições, depure erros, ajude a adaptar ao laboratório e mostre como validar e corrigir. Não use frases genéricas como “procure vulnerabilidades conhecidas” quando puder indicar uma verificação concreta.
-
-ESTILO: português claro, técnico e direto. Evite introduções longas. Quando houver dados suficientes, responda imediatamente. Estrutura preferida: ACHADOS → INTERPRETAÇÃO → HIPÓTESES (se necessário) → PRÓXIMO PASSO → COMANDO → POR QUÊ → O QUE ESPERAR.`;
 const $=id=>document.getElementById(id);
-const STORAGE='cyberTutorStateV2';
-const state=loadState();
-let currentId=state.currentId||null, pendingFile=null, pendingDataUrl=null, sending=false;
-function loadState(){try{return JSON.parse(localStorage.getItem(STORAGE))||{chats:[],currentId:null}}catch{return{chats:[],currentId:null}}}
-function saveState(){state.currentId=currentId;localStorage.setItem(STORAGE,JSON.stringify(state))}
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
-function now(){return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
-function current(){return state.chats.find(c=>c.id===currentId)}
-function makeChat(){const c={id:uid(),title:'Novo laboratório',created:Date.now(),messages:[]};state.chats.unshift(c);currentId=c.id;saveState();return c}
-function ensureChat(){return current()||makeChat()}
-function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),1800)}
+const viewport=$('chatViewport'),messagesEl=$('messages'),hero=$('hero'),promptEl=$('prompt'),sendBtn=$('send'),fileEl=$('file'),fileNameEl=$('fileName'),statusEl=$('status');
+let pendingFile=null;
+let chats=JSON.parse(localStorage.getItem('t800_chats')||'[]');
+let activeId=localStorage.getItem('t800_active')||null;
+
+function uid(){return 'c_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)}
+function current(){return chats.find(c=>c.id===activeId)||null}
+function save(){localStorage.setItem('t800_chats',JSON.stringify(chats.slice(-30)));localStorage.setItem('t800_active',activeId||'')}
+function ensureChat(){if(!current()){const c={id:uid(),title:'Novo chat',created:Date.now(),messages:[]};chats.unshift(c);activeId=c.id;save()}return current()}
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function md(text=''){
- let safe=esc(text);const blocks=[];
- safe=safe.replace(/```([^\n]*)\n?([\s\S]*?)```/g,(_,lang,code)=>{const i=blocks.length;blocks.push(`<div class="codeWrap"><div class="codeTop"><span>${esc(lang.trim()||'code')}</span><button class="copyCode" onclick="copyCode(this)">Copiar</button></div><pre><code>${code}</code></pre></div>`);return `@@BLOCK${i}@@`});
- safe=safe.replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<span class="inlineCode">$1</span>');
- safe=safe.split('\n').map(x=>x.trim().startsWith('- ')?`<li>${x.trim().slice(2)}</li>`:x).join('\n').replace(/(?:<li>[\s\S]*?<\/li>\n?)+/g,m=>`<ul>${m}</ul>`).replace(/\n/g,'<br>');
- blocks.forEach((b,i)=>safe=safe.replace(`@@BLOCK${i}@@`,b));return safe
+  const safe=esc(text);const chunks=safe.split(/```/);
+  return chunks.map((p,i)=>{if(i%2)return `<div class="codeWrap"><button class="copyCode">Copiar</button><pre><code>${p}</code></pre></div>`;
+    return p.replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/^## (.*)$/gm,'<h2>$1</h2>').replace(/^# (.*)$/gm,'<h1>$1</h1>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\n/g,'<br>');}).join('')
 }
-window.copyCode=btn=>{const text=btn.closest('.codeWrap').querySelector('code').innerText;navigator.clipboard.writeText(text);btn.textContent='Copiado';setTimeout(()=>btn.textContent='Copiar',1200)};
-function renderHero(){return `<div class="hero" id="hero"><div class="heroBadge">● laboratório técnico ativo</div><h1>Aprenda ofensiva entendendo cada passo.</h1><p>Cole saída do terminal, request HTTP, código, log ou print. O tutor separa evidência de hipótese, explica o raciocínio e conduz seu laboratório uma etapa por vez.</p><div class="featureGrid"><div class="feature"><strong>01 · Evidência primeiro</strong><span>Interpreta Nmap, Burp, ffuf, logs e erros antes de sugerir ações.</span></div><div class="feature"><strong>02 · Tutor, não piloto automático</strong><span>Explica o porquê do próximo teste para você aprender o método.</span></div><div class="feature"><strong>03 · Vision & code</strong><span>Analisa screenshots e ajuda a depurar código e PoCs do laboratório.</span></div></div><div class="chips"><button class="chip">Analise esta saída do Nmap e me dê só o próximo passo</button><button class="chip">Explique esta request do Burp linha por linha</button><button class="chip">Ajude a depurar este PoC do meu CTF</button></div></div>`}
-function renderSessions(){const box=$('sessions');box.innerHTML='';state.chats.sort((a,b)=>b.created-a.created).forEach(c=>{const d=document.createElement('div');d.className='session'+(c.id===currentId?' active':'');d.innerHTML=`<span>◌</span><span class="sTitle">${esc(c.title)}</span><button class="remove" title="Excluir">×</button>`;d.onclick=e=>{if(e.target.classList.contains('remove'))return;currentId=c.id;saveState();renderAll();closeSidebar()};d.querySelector('.remove').onclick=e=>{e.stopPropagation();state.chats=state.chats.filter(x=>x.id!==c.id);if(currentId===c.id)currentId=state.chats[0]?.id||null;saveState();renderAll()};box.appendChild(d)})}
-function messageNode(m){const row=document.createElement('div');row.className='msg '+m.role;const img=m.image?`<div class="attachmentPreview"><img src="${m.image}" alt="anexo"><span>${esc(m.file||'imagem')}</span></div>`:'';row.innerHTML=`<div class="avatar">${m.role==='user'?'EU':'AI'}</div><div class="msgBody"><div class="msgHead"><b>${m.role==='user'?'Você':'Cyber Tutor'}</b><span>${m.time||''}</span></div><div class="bubble">${md(m.content||'')}</div>${img}<div class="msgTools"><button class="miniBtn copyMsg">Copiar</button></div></div>`;row.querySelector('.copyMsg').onclick=()=>{navigator.clipboard.writeText(m.content||'');toast('Mensagem copiada')};return row}
-function renderMessages(){const box=$('messages'),c=current();box.innerHTML='';if(!c||!c.messages.length){box.innerHTML=renderHero();box.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{$('prompt').value=b.textContent;$('prompt').focus()});return}c.messages.forEach(m=>box.appendChild(messageNode(m)));requestAnimationFrame(()=>{$('chat').scrollTop=$('chat').scrollHeight})}
-function renderAll(){ensureChat();renderSessions();renderMessages();const c=current();$('chatTitle').textContent=c?.title||'Novo laboratório';$('model').value=localStorage.getItem('cyberModel')||'deepseek/deepseek-v4.1-flash';$('mode').value=localStorage.getItem('cyberMode')||'step'}
-function autoTitle(c,text){if(c.title!=='Novo laboratório')return;const clean=text.replace(/\s+/g,' ').trim();if(!clean)return;c.title=(clean.length>42?clean.slice(0,42)+'…':clean);$('chatTitle').textContent=c.title}
-function modeText(){switch($('mode').value){case'deep':return'\nMODO ATUAL: análise profunda. Explique fundamentos, alternativas, trade-offs e sinais de confirmação/refutação.';case'quick':return'\nMODO ATUAL: resposta rápida. Seja conciso e priorize a ação mais informativa.';case'code':return'\nMODO ATUAL: código e PoC de laboratório. Priorize leitura de código, causa raiz, depuração, pré-condições e validação controlada.';default:return'\nMODO ATUAL: passo a passo. Forneça somente UMA ação principal por resposta e aguarde o resultado.'}}
-function textTranscript(c){return c.messages.slice(-20).map(m=>({role:m.role,content:m.content}))}
-function setBusy(v,label='Pronto'){sending=v;$('send').disabled=v;$('status').textContent=v?(label||'Pensando…'):'Pronto';$('subtitle').textContent=v?'Processando na nuvem…':'Pentest autorizado · tutor técnico'}
-async function refreshAuth(){try{const ok=await puter.auth.isSignedIn();const line=$('authLine');if(ok){const u=await puter.auth.getUser();line.classList.add('connected');$('authState').textContent='Puter · '+(u.username||'conectado');$('signIn').textContent='Conectado'}else{line.classList.remove('connected');$('authState').textContent='Puter desconectado';$('signIn').textContent='Entrar com Puter'}}catch{$('authState').textContent='Puter indisponível'}}
-async function send(){if(sending)return;const text=$('prompt').value.trim();if(!text&&!pendingFile)return;const c=ensureChat();setBusy(true,'Analisando…');try{if(!(await puter.auth.isSignedIn()))await puter.auth.signIn();const user={role:'user',content:text||'Analise cuidadosamente a imagem anexada e me diga o próximo passo.',time:now(),file:pendingFile?.name||null,image:pendingDataUrl};c.messages.push(user);autoTitle(c,text||pendingFile?.name||'Análise de imagem');saveState();renderAll();$('prompt').value='';$('prompt').style.height='62px';const f=pendingFile;clearFile();const assistant={role:'assistant',content:'',time:now()};c.messages.push(assistant);saveState();renderAll();const rows=$('messages').querySelectorAll('.msg');const row=rows[rows.length-1];const bubble=row.querySelector('.bubble');bubble.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';let stream;if(f){const context=c.messages.slice(0,-1).slice(-16).map(m=>`${m.role==='user'?'USUÁRIO':'ASSISTENTE'}: ${m.content}`).join('\n\n');const prompt=`${SYSTEM}${modeText()}\n\nCONTEXTO RECENTE:\n${context}\n\nPEDIDO ATUAL: ${text||'Analise o print do laboratório.'}`;stream=await puter.ai.chat(prompt,f,false,{model:'deepseek/deepseek-v4-flash-vision-exp',stream:true,temperature:.2})}else{const msgs=[{role:'system',content:SYSTEM+modeText()},...textTranscript(c).slice(0,-1)];stream=await puter.ai.chat(msgs,{model:$('model').value,stream:true,temperature:.2,normalize:true})}let out='';bubble.innerHTML='';for await(const part of stream){const t=part?.text||part?.message?.content||'';if(t){out+=t;assistant.content=out;bubble.innerHTML=md(out);$('chat').scrollTop=$('chat').scrollHeight}}assistant.content=out||'Não recebi conteúdo do modelo.';saveState();renderSessions()}catch(e){const c2=current();if(c2?.messages.at(-1)?.role==='assistant'&&!c2.messages.at(-1).content)c2.messages.at(-1).content='Erro ao consultar o modelo: '+(e?.message||String(e));saveState();renderAll();toast('Falha ao consultar a IA')}finally{setBusy(false)}}
-function clearFile(){pendingFile=null;pendingDataUrl=null;$('file').value='';$('fileBar').classList.remove('show');$('fileThumb').removeAttribute('src');$('fileName').textContent=''}
-function exportChat(){const c=current();if(!c)return;const body=c.messages.map(m=>`## ${m.role==='user'?'Você':'Cyber Tutor'} · ${m.time||''}\n\n${m.content}\n`).join('\n---\n\n');const blob=new Blob([`# ${c.title}\n\n${body}`],{type:'text/markdown'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(c.title.replace(/[^a-z0-9_-]+/gi,'_')||'cyber-tutor')+'.md';a.click();URL.revokeObjectURL(a.href);toast('Conversa exportada')}
-function openSidebar(){$('sidebar').classList.add('open');$('overlay').classList.add('show')}function closeSidebar(){$('sidebar').classList.remove('open');$('overlay').classList.remove('show')}
-$('send').onclick=send;$('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});$('prompt').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,210)+'px'});$('file').onchange=()=>{const f=$('file').files?.[0];if(!f)return;pendingFile=f;const r=new FileReader();r.onload=()=>{pendingDataUrl=r.result;$('fileThumb').src=r.result;$('fileName').textContent=f.name;$('fileBar').classList.add('show')};r.readAsDataURL(f)};$('removeFile').onclick=clearFile;$('newChat').onclick=()=>{makeChat();renderAll();closeSidebar();$('prompt').focus()};$('model').onchange=e=>localStorage.setItem('cyberModel',e.target.value);$('mode').onchange=e=>localStorage.setItem('cyberMode',e.target.value);$('signIn').onclick=async()=>{try{await puter.auth.signIn();refreshAuth()}catch(e){toast('Não foi possível conectar ao Puter')}};$('clearAll').onclick=()=>{if(confirm('Apagar todas as conversas salvas neste navegador?')){state.chats=[];currentId=null;saveState();makeChat();renderAll()}};$('exportBtn').onclick=exportChat;$('topExport').onclick=exportChat;$('menuBtn').onclick=openSidebar;$('overlay').onclick=closeSidebar;
-renderAll();refreshAuth();
+function titleFrom(text){const clean=(text||'').replace(/\s+/g,' ').trim();return clean?clean.slice(0,44)+(clean.length>44?'…':''):'Novo chat'}
+function scrollBottom(force=false){requestAnimationFrame(()=>{const near=viewport.scrollHeight-viewport.scrollTop-viewport.clientHeight<180;if(force||near) viewport.scrollTop=viewport.scrollHeight})}
+function bindCopy(root){root.querySelectorAll('.copyCode').forEach(btn=>btn.onclick=()=>{const code=btn.parentElement.querySelector('code')?.innerText||'';navigator.clipboard.writeText(code);btn.textContent='Copiado';setTimeout(()=>btn.textContent='Copiar',1200)})}
+function renderMessage(m){if(hero)hero.style.display='none';const row=document.createElement('div');row.className='msg '+m.role;row.innerHTML=`<div class="avatar">${m.role==='user'?'EU':'T8'}</div><div class="content">${md(m.content||'')}${m.file?`<div class="filePill">📎 ${esc(m.file)}</div>`:''}${m.preview?`<img class="imagePreview" src="${m.preview}" alt="Imagem anexada">`:''}</div>`;messagesEl.appendChild(row);bindCopy(row);return row}
+function renderChat(){messagesEl.innerHTML='';const c=current();$('chatTitle').textContent=c?.title||'T800 HACK';if(!c||!c.messages.length){messagesEl.innerHTML=`<div class="hero" id="hero"><div class="heroInner"><div class="eyebrow">T800 HACK · Cyber Tutor</div><h1>Raciocine como pentester.<br>Aprenda fazendo.</h1><p>Cole Nmap, Burp, ffuf, logs, código, erros ou screenshots de laboratórios e CTFs autorizados. O tutor interpreta os achados, explica o raciocínio e conduz o próximo passo.</p><div class="suggestions"><button class="suggestion">Analise esta saída do Nmap e me ensine o próximo passo</button><button class="suggestion">Explique esta request HTTP do meu CTF</button><button class="suggestion">Ajude a depurar este exploit do meu laboratório</button><button class="suggestion">Quero entender privilege escalation passo a passo</button></div></div></div>`;bindSuggestions()}else c.messages.forEach(renderMessage);renderHistory();setTimeout(()=>{viewport.scrollTop=viewport.scrollHeight},0)}
+function renderHistory(){const box=$('historyList');box.innerHTML='';chats.forEach(c=>{const b=document.createElement('button');b.className='historyItem'+(c.id===activeId?' active':'');b.textContent=c.title||'Novo chat';b.onclick=()=>{activeId=c.id;save();renderChat();$('sidebar').classList.remove('open')};box.appendChild(b)})}
+function bindSuggestions(){document.querySelectorAll('.suggestion').forEach(b=>b.onclick=()=>{promptEl.value=b.textContent;promptEl.focus()})}
+function newChat(){const c={id:uid(),title:'Novo chat',created:Date.now(),messages:[]};chats.unshift(c);activeId=c.id;save();renderChat();promptEl.focus()}
+ensureChat();renderChat();
+
+async function refreshAuth(){try{const ok=await puter.auth.isSignedIn();if(ok){const u=await puter.auth.getUser();$('authState').textContent='Puter · '+(u.username||'conectado');$('signIn').textContent='Conta conectada'}else{$('authState').textContent='Puter · não conectado';$('signIn').textContent='Entrar com Puter'}}catch{$('authState').textContent='Puter · aguardando'}}
+refreshAuth();$('signIn').onclick=async()=>{try{await puter.auth.signIn();refreshAuth()}catch(e){alert('Falha no login: '+(e.message||e))}};
+$('newChat').onclick=newChat;$('mobileToggle').onclick=()=>$('sidebar').classList.toggle('open');
+$('clearAll').onclick=()=>{if(confirm('Apagar todas as conversas salvas neste navegador?')){chats=[];activeId=null;save();ensureChat();renderChat()}};
+$('exportBtn').onclick=()=>{const c=current();if(!c)return;const body=c.messages.map(m=>`## ${m.role==='user'?'Você':'T800 HACK'}\n\n${m.content}\n`).join('\n');const blob=new Blob([`# ${c.title}\n\n${body}`],{type:'text/markdown'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(c.title||'t800-hack').replace(/[^a-z0-9-_]+/gi,'_')+'.md';a.click();URL.revokeObjectURL(a.href)};
+
+fileEl.onchange=()=>{pendingFile=fileEl.files?.[0]||null;fileNameEl.textContent=pendingFile?pendingFile.name:''};
+promptEl.addEventListener('input',()=>{promptEl.style.height='auto';promptEl.style.height=Math.min(promptEl.scrollHeight,160)+'px'});
+promptEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+sendBtn.onclick=send;
+
+function modeInstruction(){const m=$('mode').value;if(m==='deep')return '\nModo atual: análise profunda. Explique fundamentos, evidências, alternativas e trade-offs com mais detalhe.';if(m==='quick')return '\nModo atual: resposta rápida. Seja direto e conciso, priorizando a próxima ação útil.';if(m==='lab')return '\nModo atual: código e exploit de laboratório autorizado. Priorize leitura e depuração técnica de código/PoC, explicando a lógica e aguardando resultados.';return '\nModo atual: passo a passo. Forneça somente UMA ação por vez e aguarde o resultado.'}
+function textHistory(c){return c.messages.slice(-18).map(m=>`${m.role==='user'?'USUÁRIO':'ASSISTENTE'}: ${m.content}`).join('\n\n')}
+async function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+
+async function send(){const text=promptEl.value.trim();if(!text&&!pendingFile)return;sendBtn.disabled=true;statusEl.textContent='Pensando…';try{if(!(await puter.auth.isSignedIn()))await puter.auth.signIn();const c=ensureChat();const f=pendingFile;let preview=null;if(f)preview=await fileToDataURL(f);const user={role:'user',content:text||'Analise esta imagem do laboratório.',file:f?.name||null,preview};if(c.messages.length===0)c.title=titleFrom(text||f?.name);c.messages.push(user);save();renderChat();promptEl.value='';promptEl.style.height='48px';pendingFile=null;fileEl.value='';fileNameEl.textContent='';
+  const assistant={role:'assistant',content:''};c.messages.push(assistant);const row=renderMessage({role:'assistant',content:''});const content=row.querySelector('.content');content.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';scrollBottom(true);
+  let stream;if(f){const ctx=`${SYSTEM}${modeInstruction()}\n\nCONTEXTO RECENTE:\n${textHistory(c)}\n\nPEDIDO ATUAL: ${text||'Analise cuidadosamente a imagem anexada e prossiga didaticamente.'}`;stream=await puter.ai.chat(ctx,f,false,{model:'deepseek/deepseek-v4-flash-vision-exp',stream:true,temperature:.2})}else{const msgs=[{role:'system',content:SYSTEM+modeInstruction()},...c.messages.slice(-20,-1).map(m=>({role:m.role,content:m.content}))];stream=await puter.ai.chat(msgs,{model:$('model').value,stream:true,temperature:.2,normalize:true})}
+  let out='';content.innerHTML='';for await(const part of stream){const piece=part?.text||part?.message?.content||part?.content||'';if(piece){out+=piece;assistant.content=out;content.innerHTML=md(out);bindCopy(content);scrollBottom()}}
+  save();renderHistory();statusEl.textContent='Pronto';scrollBottom(true)
+}catch(e){const c=current();if(c&&c.messages.length&&c.messages[c.messages.length-1].role==='assistant'&&!c.messages[c.messages.length-1].content)c.messages.pop();save();statusEl.textContent='Erro';renderChat();alert('Erro ao consultar a IA: '+(e.message||e))}finally{sendBtn.disabled=false}}
 </script>
 </body>
 </html>
