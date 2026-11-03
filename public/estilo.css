@@ -518,6 +518,12 @@ input[type="checkbox"] { accent-color: var(--vermelho); }
 .pp-status.nao .ponto { background: #ff4d59; }
 .imp-modelo { flex: 1 1 0; gap: 4px; font-size: 12px; color: var(--texto-2); }
 .imp-modelo select { width: 100%; color: var(--texto); }
+.imp-filtros-comparacao label { flex: 1 1 0; min-width: 0; }
+.sel-item.comum { border-left: 4px solid #25b468; background: rgba(37, 180, 104, 0.08); }
+.sel-item.nao-comum { border-left: 4px solid #e5202e; background: rgba(229, 32, 46, 0.08); }
+.sel-situacao { margin-left: auto; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.sel-situacao.comum { color: #55d88c; }
+.sel-situacao.nao-comum { color: #ff6b75; }
 .tag-fraca { opacity: 0.65; border-style: dashed; }
 .pp-nota { display: block; font-size: 12.5px; color: var(--texto-2); }
 .pp-nota.alerta { color: var(--amarelo); }

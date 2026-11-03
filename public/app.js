@@ -194,15 +194,39 @@
     const modelos = [...new Set(estado.postosListas.map((l) => l.projeto).filter(Boolean))].sort(comparador.compare);
     select.innerHTML = '<option value="">Todos os modelos</option>' + modelos.map((p) => `<option>${esc(p)}</option>`).join('');
     select.value = modelos.includes(atual) ? atual : '';
+    atualizarComparacao(modelos);
+  }
+
+  function atualizarComparacao(modelos = [...new Set(estado.postosListas.map((l) => l.projeto).filter(Boolean))].sort(comparador.compare)) {
+    const principal = $('#imp-projeto').value;
+    const select = $('#imp-comparar');
+    const atual = select.value;
+    const disponiveis = modelos.filter((m) => m !== principal);
+    select.innerHTML = '<option value="">Sem comparação</option>' + disponiveis.map((p) => `<option>${esc(p)}</option>`).join('');
+    select.value = disponiveis.includes(atual) ? atual : principal ? disponiveis[0] || '' : '';
+    select.disabled = !principal || !disponiveis.length;
+    $('#imp-situacao').disabled = !(principal && select.value);
+    if ($('#imp-situacao').disabled) $('#imp-situacao').value = 'todos';
+  }
+
+  function situacaoDoItem(item) {
+    const principal = $('#imp-projeto').value;
+    const base = $('#imp-comparar').value;
+    if (!principal || !base) return '';
+    return pertenceAoModelo(item, principal) && pertenceAoModelo(item, base) ? 'comum' : 'nao-comum';
   }
 
   function itensDaLista() {
-    return ordenar(filtrar(estado.itens, $('#imp-busca').value, $('#imp-projeto').value), $('#imp-ordem').value);
+    const situacao = $('#imp-situacao').value;
+    const itens = filtrar(estado.itens, $('#imp-busca').value, $('#imp-projeto').value).filter((item) => situacao === 'todos' || situacaoDoItem(item) === situacao);
+    return ordenar(itens, $('#imp-ordem').value);
   }
 
   function renderLista() {
     const lista = itensDaLista();
     const ul = $('#imp-lista');
+    const situacao = $('#imp-situacao').value;
+    $('#imp-todos').textContent = situacao === 'comum' ? 'Selecionar comuns' : situacao === 'nao-comum' ? 'Selecionar não comuns' : 'Selecionar todos';
     if (!estado.itens.length) {
       ul.innerHTML = '<li class="lista-vazia">Nenhum material cadastrado.<br><a href="#materiais" data-ir="materiais">Cadastrar ou importar</a></li>';
     } else if (!lista.length) {
@@ -221,10 +245,12 @@
   function htmlItemLista(item) {
     const copias = estado.selecao.get(item.id);
     const marcado = copias !== undefined;
-    return `<li class="sel-item${marcado ? ' marcado' : ''}" data-id="${esc(item.id)}">
+    const situacao = situacaoDoItem(item);
+    const rotulo = situacao === 'comum' ? 'Comum' : situacao === 'nao-comum' ? 'Não comum' : '';
+    return `<li class="sel-item${marcado ? ' marcado' : ''}${situacao ? ` ${situacao}` : ''}" data-id="${esc(item.id)}">
       <input type="checkbox" ${marcado ? 'checked' : ''} aria-label="Selecionar ${esc(item.codigo)}">
       <div class="sel-texto">
-        <div class="sel-linha1">${fotoDe(item.codigo) ? '' : '<span class="sem-foto-ponto" title="Sem foto cadastrada"></span>'}<span class="sel-cod">${esc(item.codigo)}</span>${item.endereco ? `<span class="tag">${esc(item.endereco)}</span>` : ''}</div>
+        <div class="sel-linha1">${fotoDe(item.codigo) ? '' : '<span class="sem-foto-ponto" title="Sem foto cadastrada"></span>'}<span class="sel-cod">${esc(item.codigo)}</span>${item.endereco ? `<span class="tag">${esc(item.endereco)}</span>` : ''}${rotulo ? `<span class="sel-situacao ${situacao}">${rotulo}</span>` : ''}</div>
         <div class="sel-desc">${esc(item.descricao || '—')}</div>
       </div>
       ${marcado ? `<div class="qtd" title="Cópias"><button type="button" data-qtd="-1" aria-label="Menos uma cópia">−</button><input type="number" min="1" max="999" value="${copias}" aria-label="Cópias"><button type="button" data-qtd="1" aria-label="Mais uma cópia">+</button></div>` : ''}
@@ -239,7 +265,7 @@
 
   function atualizarContador(total = itensDaLista().length) {
     const n = estado.selecao.size;
-    $('#imp-contador').textContent = n ? `${n} selecionado${n > 1 ? 's' : ''}` : `${total} na lista`;
+    $('#imp-contador').textContent = n ? `${n} selecionado${n > 1 ? 's' : ''} · ${total} na lista` : `${total} na lista`;
   }
 
   function alternar(id, marcar) {
@@ -290,6 +316,17 @@
     }, 120);
   });
   $('#imp-projeto').addEventListener('change', () => {
+    atualizarComparacao();
+    estado.limiteLista = POR_PAGINA;
+    renderLista();
+  });
+  $('#imp-comparar').addEventListener('change', () => {
+    $('#imp-situacao').disabled = !$('#imp-comparar').value;
+    if (!$('#imp-comparar').value) $('#imp-situacao').value = 'todos';
+    estado.limiteLista = POR_PAGINA;
+    renderLista();
+  });
+  $('#imp-situacao').addEventListener('change', () => {
     estado.limiteLista = POR_PAGINA;
     renderLista();
   });
