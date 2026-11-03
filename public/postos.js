@@ -1,6 +1,4 @@
-// Aba "Posto a posto": compara, posto por posto, a lista de um projeto (ex.: BC22) com a de
-// outro (ex.: BC12) e diz o que é comum, o que não é e o que só o outro projeto usa.
-// A leitura das planilhas e a comparação ficam em posto-a-posto.js.
+// Aba "Posto a posto": exibe uma única planilha, organizada por posto.
 'use strict';
 
 const Postos = (() => {
@@ -13,23 +11,13 @@ const Postos = (() => {
     carregando: null,
     listas: [],
     novo: lerLocal('etiquetas.postos.novo', ''),
-    base: lerLocal('etiquetas.postos.base', ''),
     posto: null, // null = todos os postos
-    filtro: 'todos',
-    ordem: lerLocal('etiquetas.postos.ordem', 'situacao'),
+    ordem: lerLocal('etiquetas.postos.ordem', 'planilha'),
     falar: Boolean(lerLocal('etiquetas.postos.falar', false)),
     resultado: null,
     itensCadastro: () => [],
   };
 
-  const FILTROS = [
-    ['todos', () => 'Todos'],
-    ['comum', () => 'Comum'],
-    ['nao-comum', () => 'Não é comum'],
-    ['so-base', (n) => `Só ${n.base}`],
-    ['outro-posto', () => 'Posto diferente'],
-  ];
-  const ORDEM_SITUACAO = { 'nao-comum': 0, 'comum-outro': 1, comum: 2, 'so-base': 3 };
   const comparador = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
 
   function painelVisivel() {
@@ -40,9 +28,7 @@ const Postos = (() => {
     return estado.listas.find((l) => l.projeto === projeto) || null;
   }
 
-  function nomes() {
-    return { novo: estado.novo || 'novo', base: estado.base || 'base' };
-  }
+  function nomes() { return { novo: estado.novo || 'projeto' }; }
 
   // ---- Dados -------------------------------------------------------------------
 
@@ -61,22 +47,20 @@ const Postos = (() => {
     render();
   }
 
-  // Padrão: BC22 (o que vai entrar) comparado com o BC12; senão, as duas primeiras listas.
+  // Padrão: BC22; senão, a primeira lista importada.
   function escolherProjetos() {
     const projetos = estado.listas.map((l) => l.projeto);
     const achar = (regex) => projetos.find((p) => regex.test(p)) || '';
-    if (!projetos.includes(estado.novo)) estado.novo = achar(/BC\s*22/i) || projetos.find((p) => p !== estado.base) || '';
-    if (!projetos.includes(estado.base) || estado.base === estado.novo) {
-      estado.base = (achar(/BC\s*12/i) !== estado.novo && achar(/BC\s*12/i)) || projetos.find((p) => p !== estado.novo) || '';
-    }
+    if (!projetos.includes(estado.novo)) estado.novo = achar(/BC\s*22/i) || projetos[0] || '';
+    if (!['planilha', 'codigo', 'descricao'].includes(estado.ordem)) estado.ordem = 'planilha';
     gravarLocal('etiquetas.postos.novo', estado.novo);
-    gravarLocal('etiquetas.postos.base', estado.base);
+    gravarLocal('etiquetas.postos.ordem', estado.ordem);
   }
 
   function recalcular() {
     const novo = listaDe(estado.novo);
-    const base = listaDe(estado.base);
-    estado.resultado = novo && base && novo !== base ? P.comparar(numerar(novo.itens), numerar(base.itens)) : null;
+    // Reaproveita a normalização do leitor, mas a tela usa apenas as entradas do projeto escolhido.
+    estado.resultado = novo ? P.comparar(numerar(novo.itens), []) : null;
     if (estado.posto !== null && !estado.resultado?.postos.some((p) => p.posto === estado.posto)) estado.posto = null;
   }
 
@@ -108,15 +92,6 @@ const Postos = (() => {
     return [...lista].sort(comparador.compare);
   }
 
-  // ---- Filtros --------------------------------------------------------------------
-
-  function passaFiltro(l, filtro) {
-    if (filtro === 'todos') return true;
-    if (filtro === 'comum') return l.situacao === 'comum' || l.situacao === 'comum-outro';
-    if (filtro === 'outro-posto') return l.situacao === 'comum-outro' || (l.situacao === 'so-base' && l.material.emA);
-    return l.situacao === filtro;
-  }
-
   function termosDaBusca() {
     return P.normalizar($('#pp-busca').value).split(' ').filter(Boolean);
   }
@@ -135,12 +110,11 @@ const Postos = (() => {
 
   function ordenar(linhas) {
     const chaves = {
-      situacao: (a, b) => ORDEM_SITUACAO[a.situacao] - ORDEM_SITUACAO[b.situacao] || a.material.ordem - b.material.ordem,
       codigo: (a, b) => comparador.compare(a.material.codigo || a.material.partNumber, b.material.codigo || b.material.partNumber),
       descricao: (a, b) => comparador.compare(a.material.descricao || '￿', b.material.descricao || '￿'),
       planilha: (a, b) => a.material.ordem - b.material.ordem,
     };
-    const porChave = chaves[estado.ordem] || chaves.situacao;
+    const porChave = chaves[estado.ordem] || chaves.planilha;
     return linhas.slice().sort((a, b) => P.compararPostos(a.posto, b.posto) || porChave(a, b) || a.material.ordem - b.material.ordem);
   }
 
@@ -150,7 +124,7 @@ const Postos = (() => {
     if (!estado.carregado) return;
     renderSeletores();
     renderLateral();
-    renderFiltros();
+    renderControles();
     renderTabelas();
     renderVeredito();
   }
@@ -159,8 +133,6 @@ const Postos = (() => {
     const opcoes = (atual, vazio) =>
       (atual ? '' : `<option value="">${esc(vazio)}</option>`) + estado.listas.map((l) => `<option${l.projeto === atual ? ' selected' : ''}>${esc(l.projeto)}</option>`).join('');
     $('#pp-novo').innerHTML = opcoes(estado.novo, 'Importe uma planilha');
-    $('#pp-base').innerHTML = opcoes(estado.base, estado.listas.length ? 'Importe outra planilha' : '—');
-    $('#pp-inverter').disabled = !(estado.novo && estado.base);
     $('#pp-planilhas').textContent = estado.listas.length ? `Planilhas importadas (${estado.listas.length})` : 'Planilhas importadas';
   }
 
@@ -181,24 +153,18 @@ const Postos = (() => {
       $('#pp-postos').innerHTML = '';
       return;
     }
-    const s = r.resumo;
-    const p = porcentagem(s.comuns, s.materiaisNovo);
+    const lista = listaDe(estado.novo);
+    const materiais = new Set(r.linhas.map((l) => P.normalizar(l.material.codigo || l.material.partNumber))).size;
     $('#pp-geral').innerHTML = `
-      <div class="pp-geral-numero"><strong>${p}%</strong> <span>dos materiais do ${esc(n.novo)} são comuns com o ${esc(n.base)}</span></div>
-      ${medidor(s.comuns, s.materiaisNovo, `${p}% comum`)}
-      <div class="pp-geral-texto"><span><i class="ponto ponto-comum"></i>${s.comuns} comuns</span><span><i class="ponto ponto-nao"></i>${s.naoComuns} não comuns</span><span><i class="ponto ponto-base"></i>${s.soBase} só no ${esc(n.base)}</span></div>
-      <div class="pp-geral-dica">Materiais diferentes: ${s.materiaisNovo} no ${esc(n.novo)} e ${s.materiaisBase} no ${esc(n.base)}. Nos postos, a conta é por posição.</div>`;
+      <div class="pp-geral-numero"><strong>${r.linhas.length}</strong> <span>posições no ${esc(n.novo)}</span></div>
+      <div class="pp-geral-texto"><span>${materiais} materiais</span><span>${r.postos.length} postos</span></div>
+      ${lista?.arquivo ? `<div class="pp-geral-dica">${esc(lista.arquivo)}</div>` : ''}`;
 
     const linhaPosto = (posto, c, titulo) => {
-      const comuns = c.comum + c['comum-outro'];
       const ativo = estado.posto === posto;
-      const detalhes = [`${comuns} comu${comuns === 1 ? 'm' : 'ns'}`, `${c['nao-comum']} não`];
-      if (c['so-base']) detalhes.push(`${c['so-base']} só ${n.base}`);
       return `<li><button type="button" class="pp-posto${ativo ? ' ativo' : ''}" data-posto="${posto === null ? '*' : esc(posto)}" aria-pressed="${ativo}">
         <span class="pp-posto-nome">${esc(titulo)}</span>
         <span class="pp-posto-total" title="Posições do ${esc(n.novo)}">${c.novo}</span>
-        ${medidor(comuns, c.novo, `${porcentagem(comuns, c.novo)}% comum`)}
-        <span class="pp-posto-info">${esc(detalhes.join(' · '))}</span>
       </button></li>`;
     };
     const total = r.postos.reduce(
@@ -209,48 +175,21 @@ const Postos = (() => {
       { comum: 0, 'comum-outro': 0, 'nao-comum': 0, 'so-base': 0, novo: 0 },
     );
     $('#pp-postos').innerHTML =
-      `<li class="pp-postos-titulo" aria-hidden="true">Posições do ${esc(n.novo)} por posto</li>` +
+      `<li class="pp-postos-titulo" aria-hidden="true">Posições por posto</li>` +
       linhaPosto(null, total, 'Todos os postos') +
       r.postos.map((c) => linhaPosto(c.posto, c, P.rotuloPosto(c.posto))).join('');
   }
 
-  function renderFiltros() {
-    const n = nomes();
-    const linhas = linhasDoPosto();
-    $('#pp-filtros').innerHTML = FILTROS.map(([id, rotulo]) => {
-      const qtd = linhas.filter((l) => passaFiltro(l, id)).length;
-      const ativo = estado.filtro === id;
-      return `<button type="button" class="chip chip-${id}${ativo ? ' ativo' : ''}" data-filtro="${id}" aria-pressed="${ativo}">${id === 'todos' ? '' : '<i class="ponto"></i>'}${esc(rotulo(n))} <b>${qtd}</b></button>`;
-    }).join('');
+  function renderControles() {
     const vazio = !estado.resultado;
     for (const id of ['#pp-exportar', '#pp-imprimir']) $(id).disabled = vazio;
-    $('#pp-filtros').hidden = vazio;
     $('.pp-ordem').hidden = vazio;
     $('#pp-ordem').value = estado.ordem;
   }
 
-  function selo(situacao, n) {
-    const texto = { comum: 'Comum', 'comum-outro': 'Comum', 'nao-comum': 'Não é comum', 'so-base': `Só ${n.base}` }[situacao];
-    const classe = { comum: 'comum', 'comum-outro': 'comum', 'nao-comum': 'nao', 'so-base': 'base' }[situacao];
-    return `<span class="selo selo-${classe}"><i class="ponto"></i>${esc(texto)}</span>`;
-  }
-
-  function observacoes(l, n) {
-    const m = l.material;
-    const notas = [];
-    const onde = (postos) => (postos.length ? P.textoPostos(postos) : 'sem posto');
-    if (l.situacao === 'comum-outro') notas.push({ texto: `No ${n.base}: ${onde(m.postosB)}`, alerta: true });
-    if (l.situacao === 'so-base') notas.push(m.emA ? { texto: `No ${n.novo}: ${onde(m.postosA)}`, alerta: true } : { texto: `Não usa no ${n.novo}` });
-    if (l.inferido === 'a') notas.push({ texto: `Posto do ${n.base} (o ${n.novo} veio sem posto)` });
-    if (l.inferido === 'b') notas.push({ texto: `Posto do ${n.novo} (o ${n.base} veio sem posto)` });
-    if (l.qtdDiferente) notas.push({ texto: 'Quantidade diferente', alerta: true });
-    return notas;
-  }
-
-  function celulaQtde(entrada, destaque) {
+  function celulaQtde(entrada) {
     if (!entrada) return '<td class="pp-qtd vazio-cel">—</td>';
-    const unidade = entrada.unidade && !/^(p[cç]s?|pç)$/i.test(entrada.unidade) ? ` <small>${esc(entrada.unidade)}</small>` : '';
-    return `<td class="pp-qtd${destaque ? ' diferente' : ''}">${esc(entrada.qtde || '—')}${unidade}</td>`;
+    return `<td class="pp-qtd">${esc(entrada.qtde || '—')}</td>`;
   }
 
   function renderTabelas() {
@@ -263,11 +202,11 @@ const Postos = (() => {
       vazio.innerHTML = estadoVazio();
       return;
     }
-    const linhas = ordenar(linhasDoPosto().filter((l) => passaFiltro(l, estado.filtro)));
+    const linhas = ordenar(linhasDoPosto());
     if (!linhas.length) {
       alvo.innerHTML = '';
       vazio.hidden = false;
-      vazio.innerHTML = '<p><strong>Nada com esse filtro.</strong></p><p class="dica">Troque o posto, a situação ou a busca.</p>';
+      vazio.innerHTML = '<p><strong>Nenhum material encontrado.</strong></p><p class="dica">Troque o posto ou limpe a busca.</p>';
       return;
     }
     vazio.hidden = true;
@@ -277,19 +216,16 @@ const Postos = (() => {
       if (!grupos.has(l.posto)) grupos.set(l.posto, []);
       grupos.get(l.posto).push(l);
     }
-    const contagem = new Map(estado.resultado.postos.map((c) => [c.posto, c]));
-    const cabecalho = `<colgroup><col class="c-caixa so-impressao"><col class="c-sit"><col class="c-cod"><col class="c-pn"><col class="c-desc"><col class="c-qtd"><col class="c-qtd"><col class="c-end"><col class="c-obs"></colgroup>
+    const cabecalho = `<colgroup><col class="c-caixa so-impressao"><col class="c-cod"><col class="c-pn"><col class="c-desc"><col class="c-qtd"><col class="c-qtd"><col class="c-end"></colgroup>
       <thead><tr>
         <th class="so-impressao pp-caixa" title="Conferido">✓</th>
-        <th>Situação</th><th>Código SAP</th><th class="pp-pn">Part Number</th><th>Descrição</th>
-        <th class="pp-qtd">Qtd ${esc(n.novo)}</th><th class="pp-qtd">Qtd ${esc(n.base)}</th>
-        <th class="pp-end" title="Endereço da etiqueta cadastrada na aba Materiais">Etiqueta</th><th>Observação</th>
+        <th>Código SAP</th><th class="pp-pn">Part Number</th><th>Descrição</th>
+        <th class="pp-qtd">Quantidade</th><th>Unidade</th>
+        <th class="pp-end" title="Endereço da etiqueta cadastrada na aba Materiais">Etiqueta</th>
       </tr></thead>`;
     alvo.innerHTML = [...grupos.entries()]
       .map(([posto, doGrupo]) => {
-        const c = contagem.get(posto);
-        const comuns = c.comum + c['comum-outro'];
-        const resumo = `${c.novo} do ${n.novo} · ${comuns} comu${comuns === 1 ? 'm' : 'ns'} · ${c['nao-comum']} não ${c['nao-comum'] === 1 ? 'é comum' : 'são comuns'} · ${c['so-base']} só ${n.base}`;
+        const resumo = `${doGrupo.length} ${doGrupo.length === 1 ? 'posição' : 'posições'}`;
         const filas = doGrupo
           .map((l) => {
             const m = l.material;
@@ -298,20 +234,15 @@ const Postos = (() => {
             const mostrar = (doPosto.length ? doPosto : ends).slice(0, 3);
             const fracos = !doPosto.length;
             const tags = mostrar.map((e) => `<span class="tag${fracos ? ' tag-fraca' : ''}"${fracos ? ' title="Etiqueta cadastrada em outro posto"' : ''}>${esc(e)}</span>`).join(' ');
-            const notas = observacoes(l, n)
-              .map((o) => `<span class="pp-nota${o.alerta ? ' alerta' : ''}">${esc(o.texto)}</span>`)
-              .join('');
             const pn = m.partNumber && P.normalizar(m.partNumber) !== P.normalizar(m.codigo) ? esc(m.partNumber) : '';
-            return `<tr class="pp-linha sit-${l.situacao}">
+            return `<tr class="pp-linha">
               <td class="so-impressao pp-caixa"><span></span></td>
-              <td>${selo(l.situacao, n)}</td>
               <td class="codigo">${m.codigo ? esc(m.codigo) : '<span class="sem-sap">sem SAP</span>'}</td>
               <td class="pp-pn">${pn}</td>
               <td class="desc">${esc(m.descricao) || '<span class="sem-sap">—</span>'}</td>
-              ${celulaQtde(l.a, l.qtdDiferente)}
-              ${celulaQtde(l.b, l.qtdDiferente)}
+              ${celulaQtde(l.a)}
+              <td>${esc(l.a?.unidade || '')}</td>
               <td class="pp-end">${tags}</td>
-              <td class="pp-obs">${notas}</td>
             </tr>`;
           })
           .join('');
@@ -326,21 +257,12 @@ const Postos = (() => {
   function estadoVazio() {
     if (!estado.listas.length) {
       return `<div class="pp-boas-vindas">
-        <h2>Posto a posto: o que é comum entre dois projetos</h2>
-        <ol>
-          <li>Importe a planilha posto a posto do <strong>BC12</strong> (ex.: a “Posto a Posto Logística”, com a aba Master List).</li>
-          <li>Importe a do <strong>BC22</strong>.</li>
-          <li>Em cada posto o site mostra o que é <span class="selo selo-comum"><i class="ponto"></i>Comum</span>, o que <span class="selo selo-nao"><i class="ponto"></i>Não é comum</span> e o que só o BC12 usa.</li>
-        </ol>
+        <h2>Posto a posto</h2>
+        <p>Importe uma planilha para visualizar e enviar a lista completa, organizada por posto.</p>
         <button type="button" class="botao primario" data-pp-importar>Importar planilha</button>
       </div>`;
     }
-    const falta = estado.listas.length === 1 ? (/BC\s*22/i.test(estado.listas[0].projeto) ? 'BC12' : 'BC22') : '';
-    return `<div class="pp-boas-vindas">
-      <h2>Falta a outra planilha para comparar</h2>
-      <p>Já importada: <strong>${esc(estado.listas.map((l) => l.projeto).join(', '))}</strong>. Importe a planilha posto a posto do ${falta ? `<strong>${falta}</strong>` : 'outro projeto'} e escolha os dois projetos ao lado.</p>
-      <button type="button" class="botao primario" data-pp-importar>Importar planilha</button>
-    </div>`;
+    return '<div class="pp-boas-vindas"><h2>Selecione um projeto</h2><p>Escolha a planilha que deseja visualizar na lateral.</p></div>';
   }
 
   // ---- Bipar / buscar um código -------------------------------------------------------
@@ -351,18 +273,16 @@ const Postos = (() => {
 
   function usosDe(material) {
     const usosA = new Map();
-    const usosB = new Map();
     for (const l of estado.resultado.linhas) {
       if (l.material !== material) continue;
       if (l.a) usosA.set(l.inferido === 'a' ? '' : l.posto, l.a);
-      if (l.b) usosB.set(l.inferido === 'b' ? '' : l.posto, l.b);
     }
     const texto = (usos) =>
       [...usos.entries()]
         .sort((a, b) => P.compararPostos(a[0], b[0]))
         .map(([posto, e]) => `${posto === '' ? 'sem posto' : P.rotuloPosto(posto)}${e.qtde ? ` (${e.qtde}${e.unidade ? ` ${e.unidade}` : ''})` : ''}`)
         .join(', ');
-    return { a: texto(usosA), b: texto(usosB) };
+    return texto(usosA);
   }
 
   function veredito() {
@@ -371,10 +291,6 @@ const Postos = (() => {
     const achados = P.acharMaterial(estado.resultado.materiais, texto);
     if (!achados.length) return pareceCodigo(texto) ? { texto, material: null } : null;
     return { texto, material: achados[0], outros: achados.length - 1 };
-  }
-
-  function mesmoPosto(m) {
-    return m.postosA.length > 0 && m.postosB.length > 0 && m.postosA.every((p) => m.postosB.includes(p));
   }
 
   function renderVeredito() {
@@ -389,22 +305,19 @@ const Postos = (() => {
     caixa.hidden = false;
     if (!v.material) {
       caixa.className = 'pp-veredito sit-nada';
-      caixa.innerHTML = `<div class="pp-veredito-selo">Não encontrado</div><div class="pp-veredito-texto"><strong>${esc(v.texto)}</strong> não está na lista do ${esc(n.novo)} nem na do ${esc(n.base)}.</div>`;
+      caixa.innerHTML = `<div class="pp-veredito-selo">Não encontrado</div><div class="pp-veredito-texto"><strong>${esc(v.texto)}</strong> não está na lista do ${esc(n.novo)}.</div>`;
       return;
     }
     const m = v.material;
     const usos = usosDe(m);
     const ends = enderecosDe(m, mapaEnderecos());
-    const titulo = { comum: 'Comum', 'nao-comum': 'Não é comum', 'so-base': `Só ${n.base}` }[m.situacao];
-    const postoDiferente = m.situacao === 'comum' && m.postosA.length && m.postosB.length && !mesmoPosto(m);
-    caixa.className = `pp-veredito sit-${m.situacao}`;
+    caixa.className = 'pp-veredito sit-comum';
     caixa.innerHTML = `
-      <div class="pp-veredito-selo"><i class="ponto"></i>${esc(titulo)}${postoDiferente ? '<small>posto diferente</small>' : ''}</div>
+      <div class="pp-veredito-selo"><i class="ponto"></i>Encontrado</div>
       <div class="pp-veredito-texto">
         <div><strong>${esc(m.codigo || m.partNumber)}</strong>${m.descricao ? ` · ${esc(m.descricao)}` : ''}${m.codigo && m.partNumber && m.partNumber !== m.codigo ? ` <span class="sem-sap">${esc(m.partNumber)}</span>` : ''}${v.outros > 0 ? ` <span class="sem-sap">(+${v.outros})</span>` : ''}</div>
         <div class="pp-veredito-usos">
-          <span><b>${esc(n.novo)}:</b> ${usos.a ? esc(usos.a) : 'não usa'}</span>
-          <span><b>${esc(n.base)}:</b> ${usos.b ? esc(usos.b) : 'não usa'}</span>
+          <span><b>Posto:</b> ${usos ? esc(usos) : 'sem posto'}</span>
           ${ends.length ? `<span><b>Etiqueta:</b> ${ends.map((e) => `<span class="tag">${esc(e)}</span>`).join(' ')}</span>` : ''}
         </div>
       </div>`;
@@ -415,14 +328,11 @@ const Postos = (() => {
     if (!estado.falar || !('speechSynthesis' in window)) return;
     const v = veredito();
     if (!v) return;
-    const n = nomes();
     const posto = (postos) => (postos.length ? postos.map((p) => (p === '½' ? 'meio' : p)).join(' e ') : '');
     let frase = 'Não encontrado.';
     if (v.material) {
       const m = v.material;
-      if (m.situacao === 'comum') frase = mesmoPosto(m) || !m.postosB.length ? 'Comum.' : `Comum. No ${n.base}, fica no posto ${posto(m.postosB)}.`;
-      else if (m.situacao === 'nao-comum') frase = 'Não é comum.';
-      else frase = `Só ${n.base}. Não usa no ${n.novo}.`;
+      frase = m.postosA.length ? `Encontrado. Posto ${posto(m.postosA)}.` : 'Encontrado. Sem posto.';
     }
     const fala = new SpeechSynthesisUtterance(frase.replace(/\bBC\s*(\d+)/gi, 'BC $1'));
     fala.lang = 'pt-BR';
@@ -442,33 +352,27 @@ const Postos = (() => {
   // ---- Exportar e imprimir -------------------------------------------------------------
 
   function linhasParaExportar() {
-    return ordenar(linhasDoPosto().filter((l) => passaFiltro(l, estado.filtro)));
+    return ordenar(linhasDoPosto());
   }
 
   function exportar() {
     const n = nomes();
     const enderecos = mapaEnderecos();
-    const textos = { comum: 'Comum', 'comum-outro': 'Comum (posto diferente)', 'nao-comum': 'Não é comum', 'so-base': `Só ${n.base}` };
-    const cab = ['Posto', 'Situação', 'Código SAP', 'Part Number', 'Descrição', `Qtd ${n.novo}`, `Qtd ${n.base}`, 'Unidade', 'Observação', 'Etiqueta (endereço)'];
+    const cab = ['Posto', 'Código SAP', 'Part Number', 'Descrição', 'Quantidade', 'Unidade', 'Etiqueta (endereço)'];
     const linhas = linhasParaExportar().map((l) => [
       P.rotuloPosto(l.posto),
-      textos[l.situacao],
       l.material.codigo,
       l.material.partNumber,
       l.material.descricao,
       l.a?.qtde || '',
-      l.b?.qtde || '',
-      l.a?.unidade || l.b?.unidade || '',
-      observacoes(l, n)
-        .map((o) => o.texto)
-        .join('; '),
+      l.a?.unidade || '',
       enderecosDe(l.material, enderecos).join(' '),
     ]);
     const celula = (v) => (/[;"\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v ?? ''));
     const corpo = [cab, ...linhas].map((l) => l.map(celula).join(';')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['﻿' + corpo], { type: 'text/csv;charset=utf-8' }));
-    a.download = `posto-a-posto-${n.novo}-x-${n.base}-${new Date().toISOString().slice(0, 10)}.csv`.replace(/[^\w.-]+/g, '_');
+    a.download = `posto-a-posto-${n.novo}-${new Date().toISOString().slice(0, 10)}.csv`.replace(/[^\w.-]+/g, '_');
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
@@ -478,11 +382,9 @@ const Postos = (() => {
   function prepararImpressao() {
     if (!painelVisivel() || !estado.resultado) return;
     const n = nomes();
-    const filtro = FILTROS.find(([id]) => id === estado.filtro);
     const partes = [estado.posto === null ? 'Todos os postos' : P.rotuloPosto(estado.posto)];
-    if (estado.filtro !== 'todos') partes.push(filtro[1](n));
     if ($('#pp-busca').value.trim()) partes.push(`busca “${$('#pp-busca').value.trim()}”`);
-    $('#pp-cabecalho-impressao').innerHTML = `<h1>Posto a posto — ${esc(n.novo)} × ${esc(n.base)}</h1>
+    $('#pp-cabecalho-impressao').innerHTML = `<h1>Posto a posto — ${esc(n.novo)}</h1>
       <p>${esc(partes.join(' · '))} · impresso em ${esc(new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }))}</p>`;
     document.body.classList.add('imprimindo-postos');
     const estilo = $('#estilo-pagina');
@@ -625,9 +527,9 @@ const Postos = (() => {
       const r = await api('POST', '/api/postos/importar', { projeto, arquivo: imp.arquivo, origem: opcao.titulo, itens });
       $('#dlg-postos').close();
       aviso(`Lista do ${r.projeto} importada: ${r.posicoes} posições.`, 'ok');
-      // O projeto importado entra na comparação.
-      if (/BC\s*12/i.test(r.projeto) && estado.novo.toUpperCase() !== r.projeto.toUpperCase()) estado.base = r.projeto;
-      else if (estado.base.toUpperCase() !== r.projeto.toUpperCase()) estado.novo = r.projeto;
+      // Mostra imediatamente a planilha recém-importada.
+      estado.novo = r.projeto;
+      gravarLocal('etiquetas.postos.novo', estado.novo);
       estado.carregado = false;
       await carregar();
     } catch (err) {
@@ -657,22 +559,11 @@ const Postos = (() => {
   function ligarEventos() {
     const aoTrocarProjeto = () => {
       gravarLocal('etiquetas.postos.novo', estado.novo);
-      gravarLocal('etiquetas.postos.base', estado.base);
       recalcular();
       render();
     };
     $('#pp-novo').addEventListener('change', (e) => {
-      if (e.target.value === estado.base) estado.base = estado.novo;
       estado.novo = e.target.value;
-      aoTrocarProjeto();
-    });
-    $('#pp-base').addEventListener('change', (e) => {
-      if (e.target.value === estado.novo) estado.novo = estado.base;
-      estado.base = e.target.value;
-      aoTrocarProjeto();
-    });
-    $('#pp-inverter').addEventListener('click', () => {
-      [estado.novo, estado.base] = [estado.base, estado.novo];
       aoTrocarProjeto();
     });
 
@@ -681,16 +572,8 @@ const Postos = (() => {
       if (!botao) return;
       estado.posto = botao.dataset.posto === '*' ? null : botao.dataset.posto;
       renderLateral();
-      renderFiltros();
       renderTabelas();
       $('.pp-rolagem').scrollTop = 0;
-    });
-    $('#pp-filtros').addEventListener('click', (e) => {
-      const botao = e.target.closest('[data-filtro]');
-      if (!botao) return;
-      estado.filtro = botao.dataset.filtro;
-      renderFiltros();
-      renderTabelas();
     });
     $('#pp-ordem').addEventListener('change', (e) => {
       estado.ordem = e.target.value;
@@ -703,7 +586,6 @@ const Postos = (() => {
     busca.addEventListener('input', () => {
       clearTimeout(atraso);
       atraso = setTimeout(() => {
-        renderFiltros();
         renderTabelas();
         renderVeredito();
       }, 120);
@@ -713,7 +595,6 @@ const Postos = (() => {
       if (e.key !== 'Enter') return;
       e.preventDefault();
       clearTimeout(atraso);
-      renderFiltros();
       renderTabelas();
       renderVeredito();
       falarVeredito();

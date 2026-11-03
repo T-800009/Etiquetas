@@ -193,10 +193,8 @@
   <!-- ===================== POSTO A POSTO ===================== -->
   <main id="aba-postos" class="painel-aba postos" hidden>
     <aside class="pp-lateral nao-imprimir">
-      <div class="pp-comparar">
-        <label>Projeto <select id="pp-novo" aria-label="Projeto que vai entrar"></select></label>
-        <button type="button" class="botao icone" id="pp-inverter" title="Inverter os projetos" aria-label="Inverter os projetos">⇄</button>
-        <label>Comparar com <select id="pp-base" aria-label="Projeto para comparar"></select></label>
+      <div class="pp-comparar pp-projeto-unico">
+        <label>Projeto <select id="pp-novo" aria-label="Projeto"></select></label>
       </div>
       <div class="pp-geral" id="pp-geral"></div>
       <ul class="pp-postos" id="pp-postos" aria-label="Postos"></ul>
@@ -213,13 +211,11 @@
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path class="onda" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </button>
         </div>
-        <div class="pp-filtros" id="pp-filtros" role="group" aria-label="Situação"></div>
         <label class="pp-ordem">Ordenar
           <select id="pp-ordem">
-            <option value="situacao">Por situação</option>
+            <option value="planilha">Ordem da planilha</option>
             <option value="codigo">Por código</option>
             <option value="descricao">Por descrição</option>
-            <option value="planilha">Ordem da planilha</option>
           </select>
         </label>
         <div class="barra-direita">

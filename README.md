@@ -27,38 +27,28 @@ cadastro de materiais e fotos. A tela é escura; a etiqueta impressa é branca, 
   o que ainda falta fotografar.
 - **Página do material** (`/m/<código>`, botão *Ver página*): feita para celular. Mostra a foto grande e onde
   o material fica; dá para **tirar a foto ali mesmo** pelo celular.
-- **Posto a posto**: compara a lista posto a posto de dois projetos (ex.: **BC22 × BC12**) e diz, em cada
-  posto, o que é **comum**, o que **não é comum** e o que **só o BC12 usa** (e o que é comum mas está em
-  outro posto). Veja abaixo.
+- **Posto a posto**: mostra uma única planilha por vez, organizada por posto, pronta para consultar,
+  imprimir ou exportar.
 - **Configurações**: busca no Google, logo da etiqueta, PIN de edição e backup.
 
-## Aba Posto a posto (BC22 × BC12)
+## Aba Posto a posto
 
-1. Clique em **Importar planilha** e escolha a planilha posto a posto do projeto — por exemplo a
-   “Posto a Posto Logística” do BC12. O site lê a aba **Master List** (colunas Posto 0, Posto ½,
+1. Clique em **Importar planilha** e escolha a planilha posto a posto do projeto. O site lê a aba
+   **Master List** (colunas Posto 0, Posto ½,
    Posto 1 … Posto 10) ou, se não tiver, as abas **P0, P05, P1…**. O nome do projeto é preenchido sozinho
-   quando dá para descobrir (pelo nome do arquivo ou pelos números de desenho); confira e clique em
-   *Importar como BC12*.
-2. Faça o mesmo com a planilha do **BC22**.
-3. Escolha os dois projetos no alto da coluna da esquerda (o padrão é BC22 comparado com BC12).
+   quando dá para descobrir (pelo nome do arquivo ou pelos números de desenho); confira o nome e importe.
+2. Escolha o projeto no alto da coluna da esquerda. A lista aparece imediatamente, separada por posto.
 
-O que aparece:
-
-- **Comum**: o mesmo material (mesmo código SAP ou mesmo Part Number) está nos dois projetos. Se no outro
-  projeto ele fica em outro posto, a observação mostra em qual (filtro *Posto diferente*).
-- **Não é comum**: só o BC22 usa.
-- **Só BC12**: está no posto no BC12 e o BC22 não usa ali (a observação diz se o BC22 usa em outro posto).
-- A coluna **Etiqueta** mostra o endereço da etiqueta já cadastrada na aba Materiais (tracejada quando a
-  etiqueta está em outro posto). *Qtd* é a quantidade no posto; em amarelo quando é diferente nos dois.
+A coluna **Etiqueta** mostra o endereço já cadastrado na aba Materiais. A lista também exibe código SAP,
+Part Number, descrição, quantidade e unidade.
 
 Na caixa de busca dá para **bipar ou digitar um código** (SAP, SAP sem o `-00` ou Part Number) e apertar
-Enter: aparece em destaque se é comum ou não e em que posto fica em cada projeto. O botão do alto-falante
-faz o site **falar o resultado** a cada código bipado. **Exportar Excel** baixa a lista filtrada e
+Enter: aparece em destaque em que posto o material fica. O botão do alto-falante
+faz o site **falar o resultado** a cada código bipado. **Exportar Excel** baixa a lista exibida e
 **Imprimir lista** imprime uma folha por posto, com uma coluna para marcar o que foi conferido.
 
-Também serve uma planilha com coluna *Posto* ou *Endereço* (como a exportação da aba Materiais) ou só a
-BOM, sem posto: nesse caso o site usa os postos do outro projeto. Importar de novo o mesmo projeto
-substitui a lista dele; o cadastro de etiquetas não é alterado.
+Também serve uma planilha com coluna *Posto* ou *Endereço* (como a exportação da aba Materiais) ou uma
+BOM sem posto. Importar de novo o mesmo projeto substitui a lista dele; o cadastro de etiquetas não é alterado.
 
 A foto é ligada ao **código do material**: se o mesmo código aparece em vários endereços/postos,
 todos usam a mesma foto.
@@ -139,7 +129,7 @@ dá para baixar o cadastro em JSON ou planilha. As listas da aba Posto a posto f
 | `src/index.js` | Worker: API, fotos, página do material e acesso ao banco D1 |
 | `wrangler.jsonc` | configuração da Cloudflare (nome do Worker, banco D1, pasta `public`) |
 | `public/index.html`, `app.js` | telas Imprimir, Materiais e Configurações |
-| `public/postos.js` | tela Posto a posto (comparação BC22 × BC12, importação, impressão) |
+| `public/postos.js` | tela Posto a posto (lista única por projeto, importação e impressão) |
 | `public/posto-a-posto.js` | leitura das planilhas posto a posto e comparação entre projetos (sem tela; testado em `test/posto-a-posto.test.js`) |
 | `public/etiqueta.css` | layout da etiqueta e da folha de impressão |
 | `public/importar.js` | leitura de `.xlsx`, `.csv` e texto colado do Excel |
