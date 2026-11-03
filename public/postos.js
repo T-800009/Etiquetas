@@ -17,6 +17,7 @@ const Postos = (() => {
     falar: Boolean(lerLocal('etiquetas.postos.falar', false)),
     resultado: null,
     itensCadastro: () => [],
+    listasMudaram: () => {},
   };
 
   const comparador = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
@@ -37,6 +38,7 @@ const Postos = (() => {
     estado.carregando ??= api('GET', '/api/postos')
       .then((dados) => {
         estado.listas = dados.listas;
+        estado.listasMudaram(estado.listas);
         estado.carregado = true;
         escolherProjetos();
         recalcular();
@@ -695,8 +697,9 @@ const Postos = (() => {
 
   // ---- Interface com o app.js ------------------------------------------------------------------
 
-  function iniciar({ itensCadastro }) {
+  function iniciar({ itensCadastro, listasMudaram }) {
     estado.itensCadastro = itensCadastro;
+    estado.listasMudaram = listasMudaram || (() => {});
     ligarEventos();
     atualizarBotaoFalar();
   }

@@ -60,6 +60,8 @@
     itens: [],
     fotos: {},
     fotosPorCodigo: new Map(),
+    postosListas: [],
+    modelosPorMaterial: new Map(),
     config: { urlBase: '', temPin: false, logo: '/img/logo-padrao.png' },
     selecao: new Map(), // id do item -> número de cópias
     layout: carregarLayout(),
@@ -82,11 +84,13 @@
   // ---------------------------------------------------------------------------
 
   async function carregar() {
-    const [dados, config] = await Promise.all([api('GET', '/api/itens'), api('GET', '/api/config')]);
+    const [dados, config, postos] = await Promise.all([api('GET', '/api/itens'), api('GET', '/api/config'), api('GET', '/api/postos')]);
     estado.itens = dados.itens;
     estado.fotos = dados.fotos;
     estado.fotosPorCodigo = new Map(Object.entries(dados.fotos).map(([c, f]) => [c.toUpperCase(), f]));
     estado.config = config;
+    estado.postosListas = postos.listas || [];
+    estado.modelosPorMaterial = criarMapaModelos(estado.postosListas);
     const ids = new Set(estado.itens.map((i) => i.id));
     for (const id of estado.selecao.keys()) if (!ids.has(id)) estado.selecao.delete(id);
     for (const id of estado.marcadosTabela) if (!ids.has(id)) estado.marcadosTabela.delete(id);
@@ -107,10 +111,34 @@
     return String(texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   }
 
-  function filtrar(itens, busca, projeto) {
+  function chaveMaterial(texto) {
+    return String(texto || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  }
+
+  function criarMapaModelos(listas) {
+    const mapa = new Map();
+    for (const lista of listas) {
+      for (const item of lista.itens || []) {
+        for (const valor of [item.codigo, item.partNumber]) {
+          const chave = chaveMaterial(valor);
+          if (!chave) continue;
+          if (!mapa.has(chave)) mapa.set(chave, new Set());
+          mapa.get(chave).add(lista.projeto);
+        }
+      }
+    }
+    return mapa;
+  }
+
+  function pertenceAoModelo(item, modelo) {
+    if (!modelo) return true;
+    return [item.codigo, item.referencia].some((valor) => estado.modelosPorMaterial.get(chaveMaterial(valor))?.has(modelo));
+  }
+
+  function filtrar(itens, busca, modelo) {
     const termos = normalizar(busca).split(/\s+/).filter(Boolean);
     return itens.filter((i) => {
-      if (projeto && i.projeto !== projeto) return false;
+      if (!pertenceAoModelo(i, modelo)) return false;
       if (!termos.length) return true;
       const texto = normalizar(`${i.codigo} ${i.descricao} ${i.referencia} ${i.bom} ${i.endereco} ${i.projeto}`);
       return termos.every((t) => texto.includes(t));
@@ -163,9 +191,9 @@
   function atualizarProjetos() {
     const select = $('#imp-projeto');
     const atual = select.value;
-    const projetos = [...new Set(estado.itens.map((i) => i.projeto).filter(Boolean))].sort(comparador.compare);
-    select.innerHTML = '<option value="">Todos os modelos</option>' + projetos.map((p) => `<option>${esc(p)}</option>`).join('');
-    select.value = projetos.includes(atual) ? atual : '';
+    const modelos = [...new Set(estado.postosListas.map((l) => l.projeto).filter(Boolean))].sort(comparador.compare);
+    select.innerHTML = '<option value="">Todos os modelos</option>' + modelos.map((p) => `<option>${esc(p)}</option>`).join('');
+    select.value = modelos.includes(atual) ? atual : '';
   }
 
   function itensDaLista() {
@@ -1187,7 +1215,15 @@
   // ---------------------------------------------------------------------------
 
   // A aba Posto a posto mostra o endereço das etiquetas já cadastradas.
-  Postos.iniciar({ itensCadastro: () => estado.itens });
+  Postos.iniciar({
+    itensCadastro: () => estado.itens,
+    listasMudaram: (listas) => {
+      estado.postosListas = listas;
+      estado.modelosPorMaterial = criarMapaModelos(listas);
+      atualizarProjetos();
+      renderLista();
+    },
+  });
   preencherLayout();
   mostrarAba(location.hash.slice(1));
   carregar().catch((err) => aviso(`Não foi possível carregar os dados: ${err.message}`, 'erro'));
