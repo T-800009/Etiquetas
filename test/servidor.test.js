@@ -214,7 +214,7 @@ test('listas posto a posto: importa, substitui pelo nome do projeto e exclui', a
       arquivo: 'Posto a posto BC22.xlsx',
       origem: 'Aba “Master List” — colunas Posto 0 a Posto 10',
       itens: [
-        { posto: '01', codigo: ' 10000001-00 ', partNumber: 'Q0000001', descricao: 'Parafuso', qtde: '2', unidade: 'Pç' },
+        { posto: '01', codigo: ' 10000001-00 ', partNumber: 'Q0000001', descricao: 'Parafuso', endereco: '08.RACK1.B1', qtde: '2', unidade: 'Pç' },
         { posto: '½', codigo: '', partNumber: 'XX22S01-0002', descricao: 'Suporte', qtde: 'Kit', unidade: 'Pç', extra: 'ignorado' },
         { posto: 'xx', codigo: '10000003-00' },
         { posto: '2', codigo: '', partNumber: '' },
@@ -229,7 +229,7 @@ test('listas posto a posto: importa, substitui pelo nome do projeto e exclui', a
   const [bc22] = lista.dados.listas;
   assert.equal(bc22.projeto, 'bc22');
   assert.equal(bc22.arquivo, 'Posto a posto BC22.xlsx');
-  assert.deepEqual(bc22.itens[0], { posto: '1', codigo: '10000001-00', partNumber: 'Q0000001', descricao: 'Parafuso', qtde: '2', unidade: 'Pç' });
+  assert.deepEqual(bc22.itens[0], { posto: '1', codigo: '10000001-00', partNumber: 'Q0000001', descricao: 'Parafuso', endereco: '08.RACK1.B1', qtde: '2', unidade: 'Pç' });
   assert.deepEqual(
     bc22.itens.map((i) => i.posto),
     ['1', '½', ''],

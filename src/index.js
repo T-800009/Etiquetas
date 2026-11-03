@@ -58,6 +58,7 @@ const ESQUEMA = [
     codigo TEXT NOT NULL DEFAULT '',
     part_number TEXT NOT NULL DEFAULT '',
     descricao TEXT NOT NULL DEFAULT '',
+    endereco TEXT NOT NULL DEFAULT '',
     qtde TEXT NOT NULL DEFAULT '',
     unidade TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (chave, ordem)
@@ -76,6 +77,10 @@ function garantirEsquema(db) {
     }
     if (!results.some((c) => c.name === 'credito')) {
       await db.prepare("ALTER TABLE fotos ADD COLUMN credito TEXT NOT NULL DEFAULT ''").run();
+    }
+    const { results: colunasPostos } = await db.prepare('PRAGMA table_info(postos_itens)').all();
+    if (!colunasPostos.some((c) => c.name === 'endereco')) {
+      await db.prepare("ALTER TABLE postos_itens ADD COLUMN endereco TEXT NOT NULL DEFAULT ''").run();
     }
   })().catch((err) => {
     esquemaPronto = null;
@@ -461,7 +466,7 @@ async function listasPostos(db) {
   ]);
   const porChave = new Map(listas.map((l) => [l.chave, { projeto: l.projeto, arquivo: l.arquivo, origem: l.origem, importadoEm: l.importado_em, itens: [] }]));
   for (const i of itens) {
-    porChave.get(i.chave)?.itens.push({ posto: i.posto, codigo: i.codigo, partNumber: i.part_number, descricao: i.descricao, qtde: i.qtde, unidade: i.unidade });
+    porChave.get(i.chave)?.itens.push({ posto: i.posto, codigo: i.codigo, partNumber: i.part_number, descricao: i.descricao, endereco: i.endereco, qtde: i.qtde, unidade: i.unidade });
   }
   return [...porChave.values()];
 }
@@ -477,14 +482,14 @@ function comandosSubstituirPostos(db, chave, lista, itens) {
       )
       .bind(chave, lista.projeto, lista.arquivo, lista.origem, lista.importadoEm),
   ];
-  const sql = `INSERT INTO postos_itens (chave, ordem, posto, codigo, part_number, descricao, qtde, unidade)
+  const sql = `INSERT INTO postos_itens (chave, ordem, posto, codigo, part_number, descricao, endereco, qtde, unidade)
     SELECT ?, json_extract(value, '$.o'), json_extract(value, '$.p'), json_extract(value, '$.c'), json_extract(value, '$.n'),
-           json_extract(value, '$.d'), json_extract(value, '$.q'), json_extract(value, '$.u')
+           json_extract(value, '$.d'), json_extract(value, '$.e'), json_extract(value, '$.q'), json_extract(value, '$.u')
     FROM json_each(?)`;
   let bloco = [];
   let tamanho = 0;
   itens.forEach((i, ordem) => {
-    const texto = JSON.stringify({ o: ordem, p: i.posto, c: i.codigo, n: i.partNumber, d: i.descricao, q: i.qtde, u: i.unidade });
+    const texto = JSON.stringify({ o: ordem, p: i.posto, c: i.codigo, n: i.partNumber, d: i.descricao, e: i.endereco, q: i.qtde, u: i.unidade });
     if (bloco.length && tamanho + texto.length > 80000) {
       comandos.push(db.prepare(sql).bind(chave, `[${bloco.join(',')}]`));
       bloco = [];
@@ -740,6 +745,7 @@ async function rotaApi(request, env, url) {
         codigo: limparTexto(i?.codigo),
         partNumber: limparTexto(i?.partNumber),
         descricao: limparTexto(i?.descricao),
+        endereco: limparTexto(i?.endereco).slice(0, 80),
         qtde: limparTexto(i?.qtde).slice(0, 20),
         unidade: limparTexto(i?.unidade).slice(0, 20),
       }))

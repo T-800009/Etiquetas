@@ -170,6 +170,7 @@ const PostoAPosto = (() => {
       codigo: pegar('sap'),
       partNumber: pegar('pn'),
       descricao: pegar('descricao'),
+      endereco: pegar('endereco'),
       qtde: qtde ?? pegar('qtde'),
       // A BOM da China repete a unidade na célula ("PCS PCS").
       unidade: pegar('unidade').split(' ')[0],
@@ -197,7 +198,7 @@ const PostoAPosto = (() => {
       const b = Number(String(e.qtde).replace(',', '.'));
       if (atual.qtde !== '' && e.qtde !== '' && Number.isFinite(a) && Number.isFinite(b)) atual.qtde = String(a + b);
       else if (!atual.qtde) atual.qtde = e.qtde;
-      for (const campo of ['codigo', 'partNumber', 'descricao', 'unidade']) if (!atual[campo]) atual[campo] = e[campo];
+      for (const campo of ['codigo', 'partNumber', 'descricao', 'endereco', 'unidade']) if (!atual[campo]) atual[campo] = e[campo];
     }
     return saida;
   }

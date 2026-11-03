@@ -164,11 +164,16 @@ const Postos = (() => {
     }
     const s = r.resumo;
     const p = porcentagem(s.comuns, s.materiaisNovo);
+    const semLocalizacao = [n.novo, n.base].filter((projeto) => {
+      const lista = listaDe(projeto);
+      return lista?.itens.length && !lista.itens.some((i) => i.endereco);
+    });
     $('#pp-geral').innerHTML = `
       <div class="pp-geral-numero"><strong>${p}%</strong> <span>em comum entre ${esc(n.novo)} e ${esc(n.base)}</span></div>
       ${medidor(s.comuns, s.materiaisNovo, `${p}% em comum`)}
       <div class="pp-geral-texto"><span><i class="ponto ponto-comum"></i>${s.comuns} comuns</span><span><i class="ponto ponto-nao"></i>${s.naoComuns} só no ${esc(n.novo)}</span><span><i class="ponto ponto-base"></i>${s.soBase} só no ${esc(n.base)}</span></div>
-      <div class="pp-geral-dica">Verde: comum. Vermelho: não é comum. A comparação considera SAP ou Part Number.</div>`;
+      <div class="pp-geral-dica">Verde: comum. Vermelho: não é comum. A comparação considera SAP ou Part Number.</div>
+      ${semLocalizacao.length ? `<div class="pp-aviso-local">Reimporte ${esc(semLocalizacao.join(' e '))} para carregar as localizações próprias dessas planilhas.</div>` : ''}`;
 
     const linhaPosto = (posto, c, titulo) => {
       const ativo = estado.posto === posto;
@@ -206,6 +211,14 @@ const Postos = (() => {
     return `<td class="pp-qtd">${esc(entrada.qtde || '—')}</td>`;
   }
 
+  function celulaEndereco(entrada) {
+    return entrada?.endereco ? `<td class="pp-end"><span class="tag">${esc(entrada.endereco)}</span></td>` : '<td class="pp-end vazio-cel">—</td>';
+  }
+
+  function enderecosDoResultado(material, lado) {
+    return [...new Set((estado.resultado?.linhas || []).filter((l) => l.material === material && l[lado]?.endereco).map((l) => l[lado].endereco))].sort(comparador.compare);
+  }
+
   function renderTabelas() {
     const vazio = $('#pp-vazio');
     const alvo = $('#pp-tabelas');
@@ -224,18 +237,17 @@ const Postos = (() => {
       return;
     }
     vazio.hidden = true;
-    const enderecos = mapaEnderecos();
     const grupos = new Map();
     for (const l of linhas) {
       if (!grupos.has(l.posto)) grupos.set(l.posto, []);
       grupos.get(l.posto).push(l);
     }
-    const cabecalho = `<colgroup><col class="c-caixa so-impressao"><col class="c-sit"><col class="c-cod"><col class="c-pn"><col class="c-desc"><col class="c-qtd"><col class="c-qtd"><col class="c-end"><col class="c-obs"></colgroup>
+    const cabecalho = `<colgroup><col class="c-caixa so-impressao"><col class="c-sit"><col class="c-cod"><col class="c-pn"><col class="c-desc"><col class="c-qtd"><col class="c-qtd"><col class="c-end"><col class="c-end"><col class="c-obs"></colgroup>
       <thead><tr>
         <th class="so-impressao pp-caixa" title="Conferido">✓</th>
         <th>Resultado</th><th>Código SAP</th><th class="pp-pn">Part Number</th><th>Descrição</th>
         <th class="pp-qtd">Qtd ${esc(n.novo)}</th><th class="pp-qtd">Qtd ${esc(n.base)}</th>
-        <th class="pp-end" title="Endereço da etiqueta cadastrada na aba Materiais">Etiqueta</th><th>Onde está</th>
+        <th class="pp-end">Local ${esc(n.novo)}</th><th class="pp-end">Local ${esc(n.base)}</th><th>Comparação do posto</th>
       </tr></thead>`;
     alvo.innerHTML = [...grupos.entries()]
       .map(([posto, doGrupo]) => {
@@ -244,11 +256,6 @@ const Postos = (() => {
         const filas = doGrupo
           .map((l) => {
             const m = l.material;
-            const ends = enderecosDe(m, enderecos);
-            const doPosto = ends.filter((e) => P.postoDoEndereco(e) === posto);
-            const mostrar = (doPosto.length ? doPosto : ends).slice(0, 3);
-            const fracos = !doPosto.length;
-            const tags = mostrar.map((e) => `<span class="tag${fracos ? ' tag-fraca' : ''}"${fracos ? ' title="Etiqueta cadastrada em outro posto"' : ''}>${esc(e)}</span>`).join(' ');
             const pn = m.partNumber && P.normalizar(m.partNumber) !== P.normalizar(m.codigo) ? esc(m.partNumber) : '';
             const comum = l.situacao === 'comum' || l.situacao === 'comum-outro';
             const status = comum ? 'Comum' : l.situacao === 'so-base' ? `Só ${n.base}` : `Só ${n.novo}`;
@@ -263,7 +270,8 @@ const Postos = (() => {
               <td class="desc">${esc(m.descricao) || '<span class="sem-sap">—</span>'}</td>
               ${celulaQtde(l.a)}
               ${celulaQtde(l.b)}
-              <td class="pp-end">${tags}</td>
+              ${celulaEndereco(l.a)}
+              ${celulaEndereco(l.b)}
               <td class="pp-obs">${esc(onde)}</td>
             </tr>`;
           })
@@ -331,7 +339,8 @@ const Postos = (() => {
       return;
     }
     const m = v.material;
-    const ends = enderecosDe(m, mapaEnderecos());
+    const endsA = enderecosDoResultado(m, 'a');
+    const endsB = enderecosDoResultado(m, 'b');
     const comum = m.situacao === 'comum';
     const titulo = comum ? 'Comum aos dois modelos' : m.situacao === 'so-base' ? `Somente no ${n.base}` : `Somente no ${n.novo}`;
     caixa.className = `pp-veredito ${comum ? 'sit-comum' : 'sit-nao-comum'}`;
@@ -342,7 +351,8 @@ const Postos = (() => {
         <div class="pp-veredito-usos">
           <span><b>${esc(n.novo)}:</b> ${m.postosA.length ? esc(P.textoPostos(m.postosA)) : 'não usa'}</span>
           <span><b>${esc(n.base)}:</b> ${m.postosB.length ? esc(P.textoPostos(m.postosB)) : 'não usa'}</span>
-          ${ends.length ? `<span><b>Etiqueta:</b> ${ends.map((e) => `<span class="tag">${esc(e)}</span>`).join(' ')}</span>` : ''}
+          ${endsA.length ? `<span><b>Local ${esc(n.novo)}:</b> ${endsA.map((e) => `<span class="tag">${esc(e)}</span>`).join(' ')}</span>` : ''}
+          ${endsB.length ? `<span><b>Local ${esc(n.base)}:</b> ${endsB.map((e) => `<span class="tag">${esc(e)}</span>`).join(' ')}</span>` : ''}
         </div>
       </div>`;
   }
@@ -382,8 +392,7 @@ const Postos = (() => {
 
   function exportar() {
     const n = nomes();
-    const enderecos = mapaEnderecos();
-    const cab = ['Posto', 'Resultado', 'Código SAP', 'Part Number', 'Descrição', `Qtd ${n.novo}`, `Qtd ${n.base}`, 'Unidade', 'Etiqueta (endereço)'];
+    const cab = ['Posto', 'Resultado', 'Código SAP', 'Part Number', 'Descrição', `Qtd ${n.novo}`, `Qtd ${n.base}`, 'Unidade', `Local ${n.novo}`, `Local ${n.base}`];
     const linhas = linhasParaExportar().map((l) => [
       P.rotuloPosto(l.posto),
       l.situacao === 'comum' || l.situacao === 'comum-outro' ? 'Comum' : l.situacao === 'so-base' ? `Só ${n.base}` : `Só ${n.novo}`,
@@ -393,7 +402,8 @@ const Postos = (() => {
       l.a?.qtde || '',
       l.b?.qtde || '',
       l.a?.unidade || l.b?.unidade || '',
-      enderecosDe(l.material, enderecos).join(' '),
+      l.a?.endereco || '',
+      l.b?.endereco || '',
     ]);
     const celula = (v) => (/[;"\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v ?? ''));
     const corpo = [cab, ...linhas].map((l) => l.map(celula).join(';')).join('\r\n');
@@ -497,11 +507,11 @@ const Postos = (() => {
       .join(' ');
     const amostra = opcao.entradas.slice(0, 8);
     $('#pp-previa').innerHTML =
-      '<thead><tr><th>Posto</th><th>Código SAP</th><th>Part Number</th><th>Descrição</th><th>Qtd</th></tr></thead>' +
+      '<thead><tr><th>Posto</th><th>Código SAP</th><th>Part Number</th><th>Descrição</th><th>Localização</th><th>Qtd</th></tr></thead>' +
       `<tbody>${amostra
         .map(
           (e) =>
-            `<tr><td>${esc(P.rotuloPosto(e.posto))}</td><td>${e.codigo ? esc(e.codigo) : '<span class="sem-sap">sem SAP</span>'}</td><td>${esc(e.partNumber)}</td><td>${esc(e.descricao)}</td><td>${esc(e.qtde)}</td></tr>`,
+            `<tr><td>${esc(P.rotuloPosto(e.posto))}</td><td>${e.codigo ? esc(e.codigo) : '<span class="sem-sap">sem SAP</span>'}</td><td>${esc(e.partNumber)}</td><td>${esc(e.descricao)}</td><td>${esc(e.endereco)}</td><td>${esc(e.qtde)}</td></tr>`,
         )
         .join('')}</tbody>`;
     atualizarConfirmar();
@@ -550,7 +560,7 @@ const Postos = (() => {
     if (existente && !confirm(`Substituir a lista do ${existente.projeto} (${existente.itens.length} posições) pela desta planilha (${opcao.entradas.length} posições)?`)) return;
     botao.disabled = true;
     try {
-      const itens = opcao.entradas.map(({ posto, codigo, partNumber, descricao, qtde, unidade }) => ({ posto, codigo, partNumber, descricao, qtde, unidade }));
+      const itens = opcao.entradas.map(({ posto, codigo, partNumber, descricao, endereco, qtde, unidade }) => ({ posto, codigo, partNumber, descricao, endereco, qtde, unidade }));
       const r = await api('POST', '/api/postos/importar', { projeto, arquivo: imp.arquivo, origem: opcao.titulo, itens });
       $('#dlg-postos').close();
       aviso(`Lista do ${r.projeto} importada: ${r.posicoes} posições.`, 'ok');

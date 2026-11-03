@@ -104,6 +104,7 @@ test('lê lista com endereço (cadastro de etiquetas) e lista sem posto (BOM)', 
   const [lista] = P.analisar([{ nome: 'Materiais', linhas: cadastro }]);
   assert.equal(lista.tipo, 'lista');
   assert.deepEqual(lista.postos, ['0', '½', '2']);
+  assert.deepEqual(lista.entradas.map((e) => e.endereco), ['00.PALLET.02', '0½.B', '02.A'], 'preserva a localização própria de cada posto a posto');
 
   const comColunaPosto = [
     ['Material', 'Texto breve material', 'Posto'],

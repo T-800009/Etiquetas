@@ -40,8 +40,8 @@ cadastro de materiais e fotos. A tela é escura; a etiqueta impressa é branca, 
 2. Escolha o modelo principal e o modelo de comparação no alto da coluna da esquerda.
 
 A coluna **Resultado** mostra em verde o que é comum e em vermelho o que existe somente em um modelo.
-A coluna **Etiqueta** mostra o endereço já cadastrado na aba Materiais. A lista também exibe código SAP,
-Part Number, descrição e a quantidade em cada modelo.
+As colunas de localização usam o endereço da própria planilha de cada ônibus, sem misturar o layout do
+BC12 com o BC22. A lista também exibe código SAP, Part Number, descrição e a quantidade em cada modelo.
 
 Na caixa de busca dá para **bipar ou digitar um código** (SAP, SAP sem o `-00` ou Part Number) e apertar
 Enter: aparece em destaque em que posto o material fica. O botão do alto-falante

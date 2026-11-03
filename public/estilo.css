@@ -377,6 +377,7 @@ input[type="checkbox"] { accent-color: var(--vermelho); }
 .pp-geral-texto { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; }
 .pp-geral-texto span { display: inline-flex; align-items: center; gap: 6px; }
 .pp-geral-dica { font-size: 12px; color: var(--texto-3); }
+.pp-aviso-local { padding: 7px 8px; border: 1px solid var(--amarelo-borda); border-radius: 5px; color: var(--amarelo); background: rgba(232, 170, 45, 0.08); font-size: 12px; line-height: 1.35; }
 .pp-postos { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; }
 .pp-postos-titulo { padding: 4px 10px 2px; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--texto-3); }
 .pp-posto {
