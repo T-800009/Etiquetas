@@ -29,7 +29,9 @@
       <div class="filtros">
         <input id="imp-busca" type="search" placeholder="Buscar código, descrição, endereço…" autocomplete="off">
         <div class="filtros-linha">
-          <select id="imp-projeto" aria-label="Projeto / linha"><option value="">Todos os projetos</option></select>
+          <label class="imp-modelo">Modelo do ônibus
+            <select id="imp-projeto" aria-label="Modelo do ônibus"><option value="">Todos os modelos</option></select>
+          </label>
           <select id="imp-ordem" aria-label="Ordenar por">
             <option value="endereco">Por endereço</option>
             <option value="codigo">Por código</option>
@@ -193,8 +195,10 @@
   <!-- ===================== POSTO A POSTO ===================== -->
   <main id="aba-postos" class="painel-aba postos" hidden>
     <aside class="pp-lateral nao-imprimir">
-      <div class="pp-comparar pp-projeto-unico">
-        <label>Projeto <select id="pp-novo" aria-label="Projeto"></select></label>
+      <div class="pp-comparar">
+        <label>Modelo principal <select id="pp-novo" aria-label="Modelo principal"></select></label>
+        <button type="button" class="botao icone" id="pp-inverter" title="Inverter os modelos" aria-label="Inverter os modelos">⇄</button>
+        <label>Comparar com <select id="pp-base" aria-label="Modelo para comparação"></select></label>
       </div>
       <div class="pp-geral" id="pp-geral"></div>
       <ul class="pp-postos" id="pp-postos" aria-label="Postos"></ul>

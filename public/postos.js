@@ -1,4 +1,4 @@
-// Aba "Posto a posto": exibe uma única planilha, organizada por posto.
+// Aba "Posto a posto": compara duas planilhas, organizadas por posto.
 'use strict';
 
 const Postos = (() => {
@@ -11,6 +11,7 @@ const Postos = (() => {
     carregando: null,
     listas: [],
     novo: lerLocal('etiquetas.postos.novo', ''),
+    base: lerLocal('etiquetas.postos.base', ''),
     posto: null, // null = todos os postos
     ordem: lerLocal('etiquetas.postos.ordem', 'planilha'),
     falar: Boolean(lerLocal('etiquetas.postos.falar', false)),
@@ -28,7 +29,7 @@ const Postos = (() => {
     return estado.listas.find((l) => l.projeto === projeto) || null;
   }
 
-  function nomes() { return { novo: estado.novo || 'projeto' }; }
+  function nomes() { return { novo: estado.novo || 'principal', base: estado.base || 'comparação' }; }
 
   // ---- Dados -------------------------------------------------------------------
 
@@ -47,20 +48,24 @@ const Postos = (() => {
     render();
   }
 
-  // Padrão: BC22; senão, a primeira lista importada.
+  // Padrão: BC22 comparado com BC12; senão, as duas primeiras listas.
   function escolherProjetos() {
     const projetos = estado.listas.map((l) => l.projeto);
     const achar = (regex) => projetos.find((p) => regex.test(p)) || '';
     if (!projetos.includes(estado.novo)) estado.novo = achar(/BC\s*22/i) || projetos[0] || '';
+    if (!projetos.includes(estado.base) || estado.base === estado.novo) {
+      estado.base = (achar(/BC\s*12/i) !== estado.novo && achar(/BC\s*12/i)) || projetos.find((p) => p !== estado.novo) || '';
+    }
     if (!['planilha', 'codigo', 'descricao'].includes(estado.ordem)) estado.ordem = 'planilha';
     gravarLocal('etiquetas.postos.novo', estado.novo);
+    gravarLocal('etiquetas.postos.base', estado.base);
     gravarLocal('etiquetas.postos.ordem', estado.ordem);
   }
 
   function recalcular() {
     const novo = listaDe(estado.novo);
-    // Reaproveita a normalização do leitor, mas a tela usa apenas as entradas do projeto escolhido.
-    estado.resultado = novo ? P.comparar(numerar(novo.itens), []) : null;
+    const base = listaDe(estado.base);
+    estado.resultado = novo && base && novo !== base ? P.comparar(numerar(novo.itens), numerar(base.itens)) : null;
     if (estado.posto !== null && !estado.resultado?.postos.some((p) => p.posto === estado.posto)) estado.posto = null;
   }
 
@@ -133,6 +138,8 @@ const Postos = (() => {
     const opcoes = (atual, vazio) =>
       (atual ? '' : `<option value="">${esc(vazio)}</option>`) + estado.listas.map((l) => `<option${l.projeto === atual ? ' selected' : ''}>${esc(l.projeto)}</option>`).join('');
     $('#pp-novo').innerHTML = opcoes(estado.novo, 'Importe uma planilha');
+    $('#pp-base').innerHTML = opcoes(estado.base, estado.listas.length ? 'Escolha outro modelo' : '—');
+    $('#pp-inverter').disabled = !(estado.novo && estado.base);
     $('#pp-planilhas').textContent = estado.listas.length ? `Planilhas importadas (${estado.listas.length})` : 'Planilhas importadas';
   }
 
@@ -153,18 +160,23 @@ const Postos = (() => {
       $('#pp-postos').innerHTML = '';
       return;
     }
-    const lista = listaDe(estado.novo);
-    const materiais = new Set(r.linhas.map((l) => P.normalizar(l.material.codigo || l.material.partNumber))).size;
+    const s = r.resumo;
+    const p = porcentagem(s.comuns, s.materiaisNovo);
     $('#pp-geral').innerHTML = `
-      <div class="pp-geral-numero"><strong>${r.linhas.length}</strong> <span>posições no ${esc(n.novo)}</span></div>
-      <div class="pp-geral-texto"><span>${materiais} materiais</span><span>${r.postos.length} postos</span></div>
-      ${lista?.arquivo ? `<div class="pp-geral-dica">${esc(lista.arquivo)}</div>` : ''}`;
+      <div class="pp-geral-numero"><strong>${p}%</strong> <span>em comum entre ${esc(n.novo)} e ${esc(n.base)}</span></div>
+      ${medidor(s.comuns, s.materiaisNovo, `${p}% em comum`)}
+      <div class="pp-geral-texto"><span><i class="ponto ponto-comum"></i>${s.comuns} comuns</span><span><i class="ponto ponto-nao"></i>${s.naoComuns} só no ${esc(n.novo)}</span><span><i class="ponto ponto-base"></i>${s.soBase} só no ${esc(n.base)}</span></div>
+      <div class="pp-geral-dica">Verde: comum. Vermelho: não é comum. A comparação considera SAP ou Part Number.</div>`;
 
     const linhaPosto = (posto, c, titulo) => {
       const ativo = estado.posto === posto;
+      const comuns = c.comum + c['comum-outro'];
+      const diferentes = c['nao-comum'] + c['so-base'];
       return `<li><button type="button" class="pp-posto${ativo ? ' ativo' : ''}" data-posto="${posto === null ? '*' : esc(posto)}" aria-pressed="${ativo}">
         <span class="pp-posto-nome">${esc(titulo)}</span>
-        <span class="pp-posto-total" title="Posições do ${esc(n.novo)}">${c.novo}</span>
+        <span class="pp-posto-total">${comuns + diferentes}</span>
+        ${medidor(comuns, comuns + diferentes, `${comuns} comuns`)}
+        <span class="pp-posto-info">${comuns} comuns · ${diferentes} diferentes</span>
       </button></li>`;
     };
     const total = r.postos.reduce(
@@ -175,7 +187,7 @@ const Postos = (() => {
       { comum: 0, 'comum-outro': 0, 'nao-comum': 0, 'so-base': 0, novo: 0 },
     );
     $('#pp-postos').innerHTML =
-      `<li class="pp-postos-titulo" aria-hidden="true">Posições por posto</li>` +
+      `<li class="pp-postos-titulo" aria-hidden="true">Comparação por posto</li>` +
       linhaPosto(null, total, 'Todos os postos') +
       r.postos.map((c) => linhaPosto(c.posto, c, P.rotuloPosto(c.posto))).join('');
   }
@@ -216,16 +228,17 @@ const Postos = (() => {
       if (!grupos.has(l.posto)) grupos.set(l.posto, []);
       grupos.get(l.posto).push(l);
     }
-    const cabecalho = `<colgroup><col class="c-caixa so-impressao"><col class="c-cod"><col class="c-pn"><col class="c-desc"><col class="c-qtd"><col class="c-qtd"><col class="c-end"></colgroup>
+    const cabecalho = `<colgroup><col class="c-caixa so-impressao"><col class="c-sit"><col class="c-cod"><col class="c-pn"><col class="c-desc"><col class="c-qtd"><col class="c-qtd"><col class="c-end"><col class="c-obs"></colgroup>
       <thead><tr>
         <th class="so-impressao pp-caixa" title="Conferido">✓</th>
-        <th>Código SAP</th><th class="pp-pn">Part Number</th><th>Descrição</th>
-        <th class="pp-qtd">Quantidade</th><th>Unidade</th>
-        <th class="pp-end" title="Endereço da etiqueta cadastrada na aba Materiais">Etiqueta</th>
+        <th>Resultado</th><th>Código SAP</th><th class="pp-pn">Part Number</th><th>Descrição</th>
+        <th class="pp-qtd">Qtd ${esc(n.novo)}</th><th class="pp-qtd">Qtd ${esc(n.base)}</th>
+        <th class="pp-end" title="Endereço da etiqueta cadastrada na aba Materiais">Etiqueta</th><th>Onde está</th>
       </tr></thead>`;
     alvo.innerHTML = [...grupos.entries()]
       .map(([posto, doGrupo]) => {
-        const resumo = `${doGrupo.length} ${doGrupo.length === 1 ? 'posição' : 'posições'}`;
+        const comuns = doGrupo.filter((l) => l.situacao === 'comum' || l.situacao === 'comum-outro').length;
+        const resumo = `${comuns} comuns · ${doGrupo.length - comuns} diferentes`;
         const filas = doGrupo
           .map((l) => {
             const m = l.material;
@@ -235,14 +248,21 @@ const Postos = (() => {
             const fracos = !doPosto.length;
             const tags = mostrar.map((e) => `<span class="tag${fracos ? ' tag-fraca' : ''}"${fracos ? ' title="Etiqueta cadastrada em outro posto"' : ''}>${esc(e)}</span>`).join(' ');
             const pn = m.partNumber && P.normalizar(m.partNumber) !== P.normalizar(m.codigo) ? esc(m.partNumber) : '';
-            return `<tr class="pp-linha">
+            const comum = l.situacao === 'comum' || l.situacao === 'comum-outro';
+            const status = comum ? 'Comum' : l.situacao === 'so-base' ? `Só ${n.base}` : `Só ${n.novo}`;
+            const onde = l.situacao === 'comum-outro'
+              ? `${n.novo}: ${P.textoPostos(m.postosA)} · ${n.base}: ${P.textoPostos(m.postosB)}`
+              : comum ? 'Mesmo posto' : l.situacao === 'so-base' && m.emA ? `${n.novo}: ${P.textoPostos(m.postosA)}` : '';
+            return `<tr class="pp-linha sit-${l.situacao}">
               <td class="so-impressao pp-caixa"><span></span></td>
+              <td><span class="pp-status ${comum ? 'comum' : 'nao'}"><i class="ponto"></i>${esc(status)}</span></td>
               <td class="codigo">${m.codigo ? esc(m.codigo) : '<span class="sem-sap">sem SAP</span>'}</td>
               <td class="pp-pn">${pn}</td>
               <td class="desc">${esc(m.descricao) || '<span class="sem-sap">—</span>'}</td>
               ${celulaQtde(l.a)}
-              <td>${esc(l.a?.unidade || '')}</td>
+              ${celulaQtde(l.b)}
               <td class="pp-end">${tags}</td>
+              <td class="pp-obs">${esc(onde)}</td>
             </tr>`;
           })
           .join('');
@@ -257,12 +277,12 @@ const Postos = (() => {
   function estadoVazio() {
     if (!estado.listas.length) {
       return `<div class="pp-boas-vindas">
-        <h2>Posto a posto</h2>
-        <p>Importe uma planilha para visualizar e enviar a lista completa, organizada por posto.</p>
+        <h2>Comparador posto a posto</h2>
+        <p>Importe duas planilhas para descobrir o que é comum e o que é diferente em cada posto.</p>
         <button type="button" class="botao primario" data-pp-importar>Importar planilha</button>
       </div>`;
     }
-    return '<div class="pp-boas-vindas"><h2>Selecione um projeto</h2><p>Escolha a planilha que deseja visualizar na lateral.</p></div>';
+    return `<div class="pp-boas-vindas"><h2>Escolha dois modelos</h2><p>Selecione o modelo principal e o modelo para comparação na lateral. Se faltar uma planilha, use <strong>Importar planilha</strong>.</p></div>`;
   }
 
   // ---- Bipar / buscar um código -------------------------------------------------------
@@ -305,19 +325,21 @@ const Postos = (() => {
     caixa.hidden = false;
     if (!v.material) {
       caixa.className = 'pp-veredito sit-nada';
-      caixa.innerHTML = `<div class="pp-veredito-selo">Não encontrado</div><div class="pp-veredito-texto"><strong>${esc(v.texto)}</strong> não está na lista do ${esc(n.novo)}.</div>`;
+      caixa.innerHTML = `<div class="pp-veredito-selo">Não encontrado</div><div class="pp-veredito-texto"><strong>${esc(v.texto)}</strong> não está em nenhum dos dois modelos.</div>`;
       return;
     }
     const m = v.material;
-    const usos = usosDe(m);
     const ends = enderecosDe(m, mapaEnderecos());
-    caixa.className = 'pp-veredito sit-comum';
+    const comum = m.situacao === 'comum';
+    const titulo = comum ? 'Comum aos dois modelos' : m.situacao === 'so-base' ? `Somente no ${n.base}` : `Somente no ${n.novo}`;
+    caixa.className = `pp-veredito ${comum ? 'sit-comum' : 'sit-nao-comum'}`;
     caixa.innerHTML = `
-      <div class="pp-veredito-selo"><i class="ponto"></i>Encontrado</div>
+      <div class="pp-veredito-selo"><i class="ponto"></i>${esc(titulo)}</div>
       <div class="pp-veredito-texto">
         <div><strong>${esc(m.codigo || m.partNumber)}</strong>${m.descricao ? ` · ${esc(m.descricao)}` : ''}${m.codigo && m.partNumber && m.partNumber !== m.codigo ? ` <span class="sem-sap">${esc(m.partNumber)}</span>` : ''}${v.outros > 0 ? ` <span class="sem-sap">(+${v.outros})</span>` : ''}</div>
         <div class="pp-veredito-usos">
-          <span><b>Posto:</b> ${usos ? esc(usos) : 'sem posto'}</span>
+          <span><b>${esc(n.novo)}:</b> ${m.postosA.length ? esc(P.textoPostos(m.postosA)) : 'não usa'}</span>
+          <span><b>${esc(n.base)}:</b> ${m.postosB.length ? esc(P.textoPostos(m.postosB)) : 'não usa'}</span>
           ${ends.length ? `<span><b>Etiqueta:</b> ${ends.map((e) => `<span class="tag">${esc(e)}</span>`).join(' ')}</span>` : ''}
         </div>
       </div>`;
@@ -332,7 +354,8 @@ const Postos = (() => {
     let frase = 'Não encontrado.';
     if (v.material) {
       const m = v.material;
-      frase = m.postosA.length ? `Encontrado. Posto ${posto(m.postosA)}.` : 'Encontrado. Sem posto.';
+      if (m.situacao === 'comum') frase = 'Material comum aos dois modelos.';
+      else frase = `Material não comum. Existe somente no ${m.situacao === 'so-base' ? nomes().base : nomes().novo}.`;
     }
     const fala = new SpeechSynthesisUtterance(frase.replace(/\bBC\s*(\d+)/gi, 'BC $1'));
     fala.lang = 'pt-BR';
@@ -358,21 +381,23 @@ const Postos = (() => {
   function exportar() {
     const n = nomes();
     const enderecos = mapaEnderecos();
-    const cab = ['Posto', 'Código SAP', 'Part Number', 'Descrição', 'Quantidade', 'Unidade', 'Etiqueta (endereço)'];
+    const cab = ['Posto', 'Resultado', 'Código SAP', 'Part Number', 'Descrição', `Qtd ${n.novo}`, `Qtd ${n.base}`, 'Unidade', 'Etiqueta (endereço)'];
     const linhas = linhasParaExportar().map((l) => [
       P.rotuloPosto(l.posto),
+      l.situacao === 'comum' || l.situacao === 'comum-outro' ? 'Comum' : l.situacao === 'so-base' ? `Só ${n.base}` : `Só ${n.novo}`,
       l.material.codigo,
       l.material.partNumber,
       l.material.descricao,
       l.a?.qtde || '',
-      l.a?.unidade || '',
+      l.b?.qtde || '',
+      l.a?.unidade || l.b?.unidade || '',
       enderecosDe(l.material, enderecos).join(' '),
     ]);
     const celula = (v) => (/[;"\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v ?? ''));
     const corpo = [cab, ...linhas].map((l) => l.map(celula).join(';')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['﻿' + corpo], { type: 'text/csv;charset=utf-8' }));
-    a.download = `posto-a-posto-${n.novo}-${new Date().toISOString().slice(0, 10)}.csv`.replace(/[^\w.-]+/g, '_');
+    a.download = `posto-a-posto-${n.novo}-x-${n.base}-${new Date().toISOString().slice(0, 10)}.csv`.replace(/[^\w.-]+/g, '_');
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
@@ -384,7 +409,7 @@ const Postos = (() => {
     const n = nomes();
     const partes = [estado.posto === null ? 'Todos os postos' : P.rotuloPosto(estado.posto)];
     if ($('#pp-busca').value.trim()) partes.push(`busca “${$('#pp-busca').value.trim()}”`);
-    $('#pp-cabecalho-impressao').innerHTML = `<h1>Posto a posto — ${esc(n.novo)}</h1>
+    $('#pp-cabecalho-impressao').innerHTML = `<h1>Posto a posto — ${esc(n.novo)} × ${esc(n.base)}</h1>
       <p>${esc(partes.join(' · '))} · impresso em ${esc(new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }))}</p>`;
     document.body.classList.add('imprimindo-postos');
     const estilo = $('#estilo-pagina');
@@ -527,9 +552,12 @@ const Postos = (() => {
       const r = await api('POST', '/api/postos/importar', { projeto, arquivo: imp.arquivo, origem: opcao.titulo, itens });
       $('#dlg-postos').close();
       aviso(`Lista do ${r.projeto} importada: ${r.posicoes} posições.`, 'ok');
-      // Mostra imediatamente a planilha recém-importada.
-      estado.novo = r.projeto;
+      // Completa primeiro o par de comparação; depois mostra a planilha recém-importada como principal.
+      if (!estado.novo) estado.novo = r.projeto;
+      else if (estado.novo !== r.projeto && !estado.base) estado.base = r.projeto;
+      else if (estado.base !== r.projeto) estado.novo = r.projeto;
       gravarLocal('etiquetas.postos.novo', estado.novo);
+      gravarLocal('etiquetas.postos.base', estado.base);
       estado.carregado = false;
       await carregar();
     } catch (err) {
@@ -559,11 +587,22 @@ const Postos = (() => {
   function ligarEventos() {
     const aoTrocarProjeto = () => {
       gravarLocal('etiquetas.postos.novo', estado.novo);
+      gravarLocal('etiquetas.postos.base', estado.base);
       recalcular();
       render();
     };
     $('#pp-novo').addEventListener('change', (e) => {
+      if (e.target.value === estado.base) estado.base = estado.novo;
       estado.novo = e.target.value;
+      aoTrocarProjeto();
+    });
+    $('#pp-base').addEventListener('change', (e) => {
+      if (e.target.value === estado.novo) estado.novo = estado.base;
+      estado.base = e.target.value;
+      aoTrocarProjeto();
+    });
+    $('#pp-inverter').addEventListener('click', () => {
+      [estado.novo, estado.base] = [estado.base, estado.novo];
       aoTrocarProjeto();
     });
 

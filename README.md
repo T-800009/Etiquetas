@@ -27,20 +27,21 @@ cadastro de materiais e fotos. A tela é escura; a etiqueta impressa é branca, 
   o que ainda falta fotografar.
 - **Página do material** (`/m/<código>`, botão *Ver página*): feita para celular. Mostra a foto grande e onde
   o material fica; dá para **tirar a foto ali mesmo** pelo celular.
-- **Posto a posto**: mostra uma única planilha por vez, organizada por posto, pronta para consultar,
-  imprimir ou exportar.
+- **Posto a posto**: compara duas planilhas por posto, destacando em verde os materiais comuns e em
+  vermelho os materiais exclusivos de cada modelo.
 - **Configurações**: busca no Google, logo da etiqueta, PIN de edição e backup.
 
 ## Aba Posto a posto
 
-1. Clique em **Importar planilha** e escolha a planilha posto a posto do projeto. O site lê a aba
+1. Clique em **Importar planilha** e escolha as planilhas posto a posto dos dois modelos. O site lê a aba
    **Master List** (colunas Posto 0, Posto ½,
    Posto 1 … Posto 10) ou, se não tiver, as abas **P0, P05, P1…**. O nome do projeto é preenchido sozinho
    quando dá para descobrir (pelo nome do arquivo ou pelos números de desenho); confira o nome e importe.
-2. Escolha o projeto no alto da coluna da esquerda. A lista aparece imediatamente, separada por posto.
+2. Escolha o modelo principal e o modelo de comparação no alto da coluna da esquerda.
 
+A coluna **Resultado** mostra em verde o que é comum e em vermelho o que existe somente em um modelo.
 A coluna **Etiqueta** mostra o endereço já cadastrado na aba Materiais. A lista também exibe código SAP,
-Part Number, descrição, quantidade e unidade.
+Part Number, descrição e a quantidade em cada modelo.
 
 Na caixa de busca dá para **bipar ou digitar um código** (SAP, SAP sem o `-00` ou Part Number) e apertar
 Enter: aparece em destaque em que posto o material fica. O botão do alto-falante
@@ -129,7 +130,7 @@ dá para baixar o cadastro em JSON ou planilha. As listas da aba Posto a posto f
 | `src/index.js` | Worker: API, fotos, página do material e acesso ao banco D1 |
 | `wrangler.jsonc` | configuração da Cloudflare (nome do Worker, banco D1, pasta `public`) |
 | `public/index.html`, `app.js` | telas Imprimir, Materiais e Configurações |
-| `public/postos.js` | tela Posto a posto (lista única por projeto, importação e impressão) |
+| `public/postos.js` | tela Posto a posto (comparação entre modelos, importação e impressão) |
 | `public/posto-a-posto.js` | leitura das planilhas posto a posto e comparação entre projetos (sem tela; testado em `test/posto-a-posto.test.js`) |
 | `public/etiqueta.css` | layout da etiqueta e da folha de impressão |
 | `public/importar.js` | leitura de `.xlsx`, `.csv` e texto colado do Excel |

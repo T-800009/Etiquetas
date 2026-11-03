@@ -164,7 +164,7 @@
     const select = $('#imp-projeto');
     const atual = select.value;
     const projetos = [...new Set(estado.itens.map((i) => i.projeto).filter(Boolean))].sort(comparador.compare);
-    select.innerHTML = '<option value="">Todos os projetos</option>' + projetos.map((p) => `<option>${esc(p)}</option>`).join('');
+    select.innerHTML = '<option value="">Todos os modelos</option>' + projetos.map((p) => `<option>${esc(p)}</option>`).join('');
     select.value = projetos.includes(atual) ? atual : '';
   }
 
