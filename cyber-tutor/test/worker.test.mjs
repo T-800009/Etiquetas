@@ -75,3 +75,14 @@ test('Deploy scripts select the T800 configuration within the shared repository'
   assert.match(packageJSON.scripts.dev, /--config \.\/wrangler\.toml/);
   assert.ok(!config.includes('d1_databases'));
 });
+
+test('Decepticon module is linked, static and restricted to local preparation', async () => {
+  const home = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
+  const module = await readFile(new URL('../public/decepticon.html', import.meta.url), 'utf8');
+  assert.match(home, /href="\/decepticon\.html"/);
+  assert.match(module, /<title>Decepticon \| T800 HACK<\/title>/);
+  assert.match(module, /href="http:\/\/localhost:3000"/);
+  assert.match(module, /data-check="scope"/);
+  assert.match(module, /localStorage/);
+  assert.ok(!module.includes('/api/decepticon'));
+});
