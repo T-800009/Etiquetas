@@ -44,8 +44,8 @@ npx wrangler deploy --config ./wrangler.toml --dry-run
 
 ## Módulo Decepticon (apoio a laboratório)
 
-A página pública \`/decepticon.html\` é acessível pela barra lateral do T800 HACK e funciona como **central de preparação**, sem interromper o chat. Possui checklist local, ficha de laboratório e exportação de anotações para \`.txt\`.
+A página pública `/decepticon.html` é acessível pela barra lateral do T800 HACK e funciona como **central de preparação**, sem interromper o chat. Possui checklist local, ficha de laboratório e exportação de anotações para `.txt`.
 
-O Decepticon é um projeto separado: **não está instalado no Cloudflare Worker**. Para utilizá-lo, prepare um ambiente próprio e autorizado seguindo a [documentação oficial](https://github.com/BitterSecurity/Decepticon/blob/main/docs/getting-started.md). Com o dashboard local iniciado, o botão “Abrir dashboard local” abre \`http://localhost:3000\` no navegador **do mesmo computador**.
+O Decepticon é um projeto separado: **não está instalado no Cloudflare Worker**. Para utilizá-lo, prepare um ambiente próprio e autorizado seguindo a [documentação oficial](https://github.com/BitterSecurity/Decepticon/blob/main/docs/getting-started.md). Com o dashboard local iniciado, o botão “Abrir dashboard local” abre `http://localhost:3000` no navegador **do mesmo computador**.
 
-Por segurança, este módulo não possui API de execução, não encaminha instruções ao Decepticon e não coleta senhas ou tokens. As informações digitadas são armazenadas apenas no \`localStorage\` do navegador e podem ser apagadas pelo botão “Limpar” ou pelas configurações de armazenamento do navegador. Para testar a integração visual, execute \`npm test\` dentro de \`cyber-tutor\`.
+Por segurança, este módulo não possui API de execução, não encaminha instruções ao Decepticon e não coleta senhas ou tokens. As informações digitadas são armazenadas apenas no `localStorage` do navegador e podem ser apagadas pelo botão “Limpar” ou pelas configurações de armazenamento do navegador. Para testar a integração visual, execute `npm test` dentro de `cyber-tutor`.
