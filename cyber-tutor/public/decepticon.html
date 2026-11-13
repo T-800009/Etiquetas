@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#080c13">
+  <meta name="description" content="T800 HACK — painel de apoio para uso local do Decepticon em laboratórios autorizados.">
+  <title>Decepticon | T800 HACK</title>
+  <link rel="icon" href="/assets/t800.jpg" type="image/jpeg">
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color-scheme:dark;--bg:#080c13;--surface:#0d1420;--surface2:#101b2a;--line:#253144;--text:#edf4ff;--muted:#9dacc0;--accent:#ff4560;--blue:#67adff;--green:#57dca3}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:radial-gradient(800px 480px at 75% -10%,#5120304d,transparent 65%),radial-gradient(650px 390px at 0% 0%,#163a5d45,transparent 60%),var(--bg);color:var(--text)}
+    a{color:inherit;text-decoration:none}
+    button,input,textarea{font:inherit}
+    button{cursor:pointer}
+    a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+    .shell{max-width:1140px;margin:auto;padding:20px 28px 70px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line);padding-bottom:22px}
+    .logo{display:flex;gap:13px;align-items:center;min-width:0}
+    .logo img{width:45px;height:45px;border-radius:12px;object-fit:cover;border:1px solid #ffffff22}
+    .logo strong{font-size:14px;letter-spacing:.1em}
+    .logo small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+    .back,.link,.btn{display:inline-flex;justify-content:center;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:11px 15px;background:#111b2b;color:var(--text);font-weight:650;font-size:13px}
+    .back:hover,.link:hover,.btn:hover{border-color:#57708f;background:#162338}
+    .eyebrow{font-size:11px;font-weight:800;letter-spacing:.19em;text-transform:uppercase;color:var(--accent)}
+    .hero{display:flex;justify-content:space-between;gap:28px;align-items:flex-end;margin:50px 0 29px}
+    h1{font-size:clamp(39px,6vw,70px);margin:10px 0;letter-spacing:-.055em;line-height:1}
+    h1 span{color:var(--accent)}
+    .lead{max-width:650px;line-height:1.7;color:var(--muted);font-size:14px;margin:18px 0 0}
+    .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid #604453;border-radius:100px;background:#2a1820;padding:9px 12px;color:#ffb8c4;white-space:nowrap;font-size:12px;font-weight:650}
+    .dot{height:7px;width:7px;border-radius:50%;background:#ff657d}
+    .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:25px}
+    .btn.primary{background:linear-gradient(125deg,#e22c4b,#a82240);border-color:#ff5a70;color:white}
+    .btn.primary:hover{filter:brightness(1.1)}
+    .btn.disabled{cursor:not-allowed;opacity:.55}
+    .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}
+    .card{background:linear-gradient(160deg,#101928,#0c131d);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 14px 36px #0003}
+    .card h2{font-size:17px;letter-spacing:-.02em;margin:0 0 8px}
+    .card p{line-height:1.6;color:var(--muted);font-size:13px;margin:8px 0 20px}
+    .section-tag{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--blue);font-weight:800;margin-bottom:12px}
+    .callout{background:#0b22304d;border:1px solid #35516a;border-radius:12px;padding:13px 15px;font-size:12px;line-height:1.65;color:#b2cae1}
+    .callout strong{color:#e3f0ff}
+    .metric{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;color:var(--muted);font-size:12px}
+    .metric strong{color:var(--text);font-variant-numeric:tabular-nums}
+    .track{height:7px;background:#1c2b3a;border-radius:100px;overflow:hidden;margin-bottom:18px}
+    .track i{display:block;height:100%;width:0;background:linear-gradient(90deg,#568dff,#57dca3);border-radius:100px;transition:width .2s}
+    .check{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-top:1px solid #ffffff12;font-size:13px;line-height:1.4}
+    .check input{width:18px;height:18px;accent-color:var(--green);flex:none;margin-top:1px}
+    .check small{display:block;color:var(--muted);font-size:11px;margin-top:4px;line-height:1.5}
+    label.fieldlabel{display:block;color:#cbd9ea;font-size:12px;font-weight:700;margin:17px 0 7px}
+    input[type="text"],textarea{width:100%;background:#080f1a;color:var(--text);border:1px solid #31435b;border-radius:11px;padding:11px 12px;outline:none}
+    input[type="text"]:focus,textarea:focus{border-color:var(--blue)}
+    textarea{min-height:112px;resize:vertical;line-height:1.5}
+    .subactions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+    .subactions .btn{padding:9px 12px}
+    .muted{font-size:11px!important;color:var(--muted)!important;margin:12px 0 0!important}
+    .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+    .step{background:#0b1420;border:1px solid #203247;border-radius:13px;padding:16px}
+    .step b{display:block;color:var(--accent);font-size:11px;letter-spacing:.11em;margin-bottom:10px}
+    .step strong{font-size:13px}
+    .step p{font-size:11px;line-height:1.55;margin:7px 0 0;color:var(--muted)}
+    .footer{display:flex;justify-content:space-between;align-items:center;gap:14px;border-top:1px solid var(--line);margin-top:35px;padding-top:22px;font-size:12px;color:var(--muted)}
+    .footer a{color:#b4d8ff;text-decoration:underline;text-underline-offset:3px}
+    #notice{min-height:20px;color:var(--green);font-size:12px;align-self:center}
+    @media(max-width:850px){.grid{grid-template-columns:1fr}.steps{grid-template-columns:repeat(2,1fr)}.hero{align-items:flex-start;flex-direction:column;margin-top:36px}}
+    @media(max-width:520px){.shell{padding:15px 15px 50px}.back{padding:10px 12px;font-size:12px}.logo img{width:37px;height:37px}.logo strong{font-size:12px}.logo small{font-size:10px}.hero{margin:30px 0 23px}.card{padding:18px}.steps{grid-template-columns:1fr}.footer{flex-direction:column;align-items:flex-start}.actions .btn{width:100%}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="top">
+      <div class="logo"><img src="/assets/t800.jpg" width="45" height="45" alt="T800"><div><strong>T800 HACK</strong><small>Cyber Lab / Módulos</small></div></div>
+      <a class="back" href="/">← Voltar ao chat</a>
+    </header>
+    <main>
+      <div class="hero">
+        <div>
+          <div class="eyebrow">Módulo de laboratório · Red Team</div>
+          <h1>DECEPT<span>ICON</span></h1>
+          <p class="lead">Central de preparação e acesso ao Decepticon para ambientes próprios ou com autorização explícita. O T800 continua como tutor; o Decepticon roda em um serviço separado.</p>
+          <div class="actions">
+            <a class="btn primary" href="http://localhost:3000" target="_blank" rel="noopener noreferrer">Abrir dashboard local ↗</a>
+            <a class="btn" href="https://github.com/BitterSecurity/Decepticon/blob/main/docs/getting-started.md" target="_blank" rel="noopener noreferrer">Instalação oficial ↗</a>
+          </div>
+        </div>
+        <div class="pill"><span class="dot" aria-hidden="true"></span> Serviço não verificado</div>
+      </div>
+      <div class="grid">
+        <section class="card" aria-labelledby="connectTitle">
+          <span class="section-tag">01 / Ambiente</span>
+          <h2 id="connectTitle">Conexão ao Decepticon</h2>
+          <p>Este painel não executa comandos, não faz varreduras e não transmite dados do laboratório. Ele abre o dashboard do Decepticon que estiver rodando no mesmo dispositivo.</p>
+          <div class="callout"><strong>Estado:</strong> não conectado ao backend. Para abrir o dashboard, o Decepticon precisa estar instalado e iniciado localmente, com a interface web ativa em <code>http://localhost:3000</code>. No celular, o endereço aponta para o próprio celular, não para seu PC.</div>
+          <div class="steps">
+            <div class="step"><b>01</b><strong>Docker</strong><p>Prepare um ambiente Linux, Windows com Docker ou WSL2.</p></div>
+            <div class="step"><b>02</b><strong>Configuração</strong><p>Siga as instruções oficiais e configure um provedor de IA.</p></div>
+            <div class="step"><b>03</b><strong>Dashboard</strong><p>Inicie o Decepticon e habilite a interface web local.</p></div>
+            <div class="step"><b>04</b><strong>Acesso</strong><p>Use o botão acima no navegador do computador.</p></div>
+          </div>
+          <p class="muted">Nenhuma credencial, token ou API externa é solicitada por esta página.</p>
+        </section>
+        <section class="card" aria-labelledby="checkTitle">
+          <span class="section-tag">02 / Preparação</span>
+          <h2 id="checkTitle">Checklist do laboratório</h2>
+          <p>Marque os pré-requisitos conforme forem concluídos. As marcações são salvas somente neste navegador.</p>
+          <div class="metric"><span>Preparação</span><strong id="progressText">0 de 4</strong></div>
+          <div class="track" role="progressbar" aria-label="Pré-requisitos concluídos" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0" id="progressTrack"><i id="progressFill"></i></div>
+          <label class="check"><input type="checkbox" data-check="docker"><span>Docker e Compose disponíveis<small>Ambiente de execução separado do Cloudflare Worker</small></span></label>
+          <label class="check"><input type="checkbox" data-check="setup"><span>Decepticon configurado<small>Seguindo a documentação do projeto original</small></span></label>
+          <label class="check"><input type="checkbox" data-check="scope"><span>Autorização e escopo definidos<small>Somente recursos próprios ou com permissão formal</small></span></label>
+          <label class="check"><input type="checkbox" data-check="dashboard"><span>Dashboard iniciado localmente<small>Interface habilitada na própria máquina</small></span></label>
+        </section>
+        <section class="card" aria-labelledby="labTitle">
+          <span class="section-tag">03 / Organização</span>
+          <h2 id="labTitle">Ficha do laboratório</h2>
+          <p>Registre o cenário de treinamento e exporte uma ficha simples. Nenhum dado é enviado ao T800 ou ao Decepticon.</p>
+          <label class="fieldlabel" for="labName">Nome do laboratório</label>
+          <input id="labName" type="text" maxlength="140" placeholder="Ex.: Ambiente de treinamento pessoal">
+          <label class="fieldlabel" for="labNotes">Objetivo, autorização e observações</label>
+          <textarea id="labNotes" maxlength="2000" placeholder="Registre o objetivo de aprendizagem e os limites permitidos. Não coloque senhas, tokens ou informações sensíveis."></textarea>
+          <div class="subactions">
+            <button class="btn" id="saveNotes" type="button">Salvar localmente</button>
+            <button class="btn" id="exportNotes" type="button">Exportar ficha .txt</button>
+            <button class="btn" id="resetNotes" type="button">Limpar</button>
+            <span id="notice" role="status" aria-live="polite"></span>
+          </div>
+        </section>
+        <section class="card" aria-labelledby="aboutTitle">
+          <span class="section-tag">04 / Recursos</span>
+          <h2 id="aboutTitle">Documentação e limites</h2>
+          <p>O Decepticon é um projeto independente. Uma página estática no Cloudflare não instala seus contêineres nem se conecta automaticamente a eles.</p>
+          <div class="subactions">
+            <a class="link" href="https://github.com/BitterSecurity/Decepticon" target="_blank" rel="noopener noreferrer">Repositório oficial ↗</a>
+            <a class="link" href="https://github.com/BitterSecurity/Decepticon/blob/main/docs/setup-guide.md" target="_blank" rel="noopener noreferrer">Guia de configuração ↗</a>
+          </div>
+          <div class="callout" style="margin-top:18px"><strong>Proteção:</strong> este módulo não possui execução remota, proxy de comandos ou automação ofensiva. O uso do Decepticon fica separado e sob o controle do operador.</div>
+        </section>
+      </div>
+    </main>
+    <footer class="footer"><span>T800 HACK / Decepticon — módulo de apoio a laboratórios autorizados</span><a href="/">Retornar ao T800</a></footer>
+  </div>
+  <script>
+    (function () {
+      'use strict';
+      var key = 't800.decepticon.lab.v1';
+      var boxes = Array.from(document.querySelectorAll('[data-check]'));
+      var name = document.getElementById('labName');
+      var notes = document.getElementById('labNotes');
+      var notice = document.getElementById('notice');
+      function read() {
+        try {
+          var stored = JSON.parse(localStorage.getItem(key) || '{}');
+          if (stored && typeof stored === 'object') {
+            name.value = typeof stored.name === 'string' ? stored.name.slice(0, 140) : '';
+            notes.value = typeof stored.notes === 'string' ? stored.notes.slice(0, 2000) : '';
+            boxes.forEach(function (el) { el.checked = !!(stored.checks && stored.checks[el.dataset.check] === true); });
+          }
+        } catch (_) { notice.textContent = 'Armazenamento local indisponível.'; }
+      }
+      function updateProgress() {
+        var done = boxes.filter(function (el) { return el.checked; }).length;
+        document.getElementById('progressText').textContent = done + ' de 4';
+        document.getElementById('progressFill').style.width = done * 25 + '%';
+        document.getElementById('progressTrack').setAttribute('aria-valuenow', String(done));
+      }
+      function collect() {
+        var checks = {};
+        boxes.forEach(function (el) { checks[el.dataset.check] = el.checked; });
+        return { name: name.value.trim(), notes: notes.value.trim(), checks: checks };
+      }
+      function save() {
+        try {
+          localStorage.setItem(key, JSON.stringify(collect()));
+          notice.textContent = 'Salvo neste navegador.';
+        } catch (_) { notice.textContent = 'Não foi possível salvar localmente.'; }
+      }
+      boxes.forEach(function (el) { el.addEventListener('change', function () { updateProgress(); save(); }); });
+      document.getElementById('saveNotes').addEventListener('click', save);
+      document.getElementById('resetNotes').addEventListener('click', function () {
+        if (!window.confirm('Limpar a ficha e o checklist deste navegador?')) return;
+        name.value = ''; notes.value = '';
+        boxes.forEach(function (el) { el.checked = false; });
+        updateProgress();
+        try { localStorage.removeItem(key); } catch (_) {}
+        notice.textContent = 'Ficha limpa.';
+      });
+      document.getElementById('exportNotes').addEventListener('click', function () {
+        var data = collect();
+        var parts = ['T800 HACK — Ficha de laboratório Decepticon', 'Laboratório: ' + (data.name || '(não informado)'), '',
+          'CHECKLIST', 'Docker: ' + (data.checks.docker ? 'OK' : 'Pendente'),
+          'Configuração: ' + (data.checks.setup ? 'OK' : 'Pendente'),
+          'Autorização: ' + (data.checks.scope ? 'OK' : 'Pendente'),
+          'Dashboard: ' + (data.checks.dashboard ? 'OK' : 'Pendente'), '',
+          'OBJETIVO E OBSERVAÇÕES', data.notes || '(sem anotações)', '',
+          'Este documento não comprova autorização e não executa operações.'];
+        var url = URL.createObjectURL(new Blob([parts.join('\n')], { type: 'text/plain;charset=utf-8' }));
+        var a = document.createElement('a');
+        a.href = url; a.download = 't800-decepticon-laboratorio.txt';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        notice.textContent = 'Ficha exportada.';
+      });
+      read(); updateProgress();
+    }());
+  </script>
+</body>
+</html>
